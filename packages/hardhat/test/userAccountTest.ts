@@ -1,11 +1,14 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { expect, use } from "chai"
+import chai from 'chai'
+import chaiAsPromised from "chai-as-promised"
 import { solidity } from "ethereum-waffle"
-import { utils } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { ethers } from 'hardhat'
 import { ERC20Stub, ERC20Stub__factory, UserAccount, UserAccount__factory } from '../typechain'
+import fc from 'fast-check';
 
-use(solidity)
+chai.use(solidity).use(chaiAsPromised)
+const { expect } = chai
 
 describe("User Accounts", async () => {
 
@@ -36,7 +39,7 @@ describe("User Accounts", async () => {
         userAccountFactory = (await ethers.getContractFactory('UserAccount', owner)) as UserAccount__factory
     })
 
-    beforeEach(async () => {
+    const initBalaces = async () => {
         /* before each context */
         userAccount = await userAccountFactory.deploy(lusd.address, weth.address)
         await userAccount.deployed()
@@ -49,9 +52,10 @@ describe("User Accounts", async () => {
             await weth.connect(trader).approve(userAccount.address, utils.parseUnits("100"))
             await lusd.connect(trader).approve(userAccount.address, utils.parseUnits("25000"))   
         }
-    })
+    }
 
-    it("support trader deposits", async () => {
+    it("should support trader deposits", async () => {
+        await initBalaces()
         const trader1Account = userAccount.connect(trader1)
         const trader2Account = userAccount.connect(trader2)
 
@@ -92,7 +96,8 @@ describe("User Accounts", async () => {
         expect(await trader1Account.wallet(lusd.address)).to.be.eq(utils.parseUnits("1500"))
     })
 
-    it("support trader withdrawals", async () => {
+    it("should support trader withdrawals", async () => {
+        await initBalaces()
         const traderAccount = userAccount.connect(trader1)
         const trader2Account = userAccount.connect(trader2)
         await traderAccount.deposit(weth.address, utils.parseUnits("10"))
@@ -129,5 +134,41 @@ describe("User Accounts", async () => {
 
         expect(await trader2Account.wallet(weth.address)).to.be.eq(utils.parseUnits("50"))
         expect(await trader2Account.wallet(lusd.address)).to.be.eq(utils.parseUnits("9500"))
+    })
+
+    it("should always keep a consistent state", async () => {
+        await lusd.setBalance(trader1.address, utils.parseUnits("250000"))
+        await lusd.connect(trader1).approve(userAccount.address, BigNumber.from(2).pow(255))   
+        const traderAccount = userAccount.connect(trader1)
+
+        const bnArb = fc.bigIntN(80).map(BigNumber.from).map(bn => bn.abs())
+
+        await fc.assert(fc.asyncProperty(bnArb, fc.boolean(), async (amount, isDeposit) => {
+            const traderTokenBalance = await lusd.balanceOf(trader1.address);
+            const accountTokenBalance = await lusd.balanceOf(userAccount.address);
+            const traderWalletBalance = await traderAccount.wallet(lusd.address);
+
+            if(isDeposit) {
+                const deposit = traderAccount.deposit(lusd.address, amount);
+                if(amount.gt(traderTokenBalance)) {
+                    await expect(deposit).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'ERC20: transfer amount exceeds balance'")
+                } else {
+                    await deposit
+                    expect(await lusd.balanceOf(trader1.address)).to.be.eq(traderTokenBalance.sub(amount))
+                    expect(await lusd.balanceOf(userAccount.address)).to.be.eq(accountTokenBalance.add(amount))
+                    expect(await traderAccount.wallet(lusd.address)).to.be.eq(traderWalletBalance.add(amount))
+                }
+            } else {
+                const withdraw = traderAccount.withdraw(lusd.address, amount);
+                if(amount.gt(traderWalletBalance)) {
+                    await expect(withdraw).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'UserAccount: not enough balance'")
+                } else {
+                    await withdraw
+                    expect(await lusd.balanceOf(trader1.address)).to.be.eq(traderTokenBalance.add(amount))
+                    expect(await lusd.balanceOf(userAccount.address)).to.be.eq(accountTokenBalance.sub(amount))
+                    expect(await traderAccount.wallet(lusd.address)).to.be.eq(traderWalletBalance.sub(amount))
+                } 
+            }
+        }), {endOnFailure: true, verbose: true})
     })
 })

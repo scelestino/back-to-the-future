@@ -21,12 +21,18 @@ contract UserAccount {
     function deposit(address token, uint amount) external {
         require(address(token) != address(0), "UserAccount: token is the zero address");
 
-        uint prevBalance = wallets[msg.sender][token];
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
-        wallets[msg.sender][token] = prevBalance.add(amount);
+        wallets[msg.sender][token] = wallets[msg.sender][token].add(amount);
     }
 
-    
+    function withdraw(address token, uint amount) external {
+        require(address(token) != address(0), "UserAccount: token is the zero address");
+        uint balance = wallets[msg.sender][token];
+        require(balance >= amount, "UserAccount: not enough balance");
+
+        SafeERC20.safeTransfer(IERC20(token), msg.sender, amount);
+        wallets[msg.sender][token] = balance.sub(amount);
+    }
 
     function wallet(address token) external view returns (uint) {
         return wallets[msg.sender][token];

@@ -41,7 +41,7 @@ describe("User Accounts", async () => {
 
     const initBalaces = async () => {
         /* before each context */
-        userAccount = await userAccountFactory.deploy(lusd.address, weth.address)
+        userAccount = await userAccountFactory.deploy()
         await userAccount.deployed()
         expect(userAccount.address).to.properAddress
 

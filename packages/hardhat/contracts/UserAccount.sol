@@ -8,6 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 
 contract UserAccount {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
     
     mapping (address => mapping (address => uint)) wallets;
 
@@ -23,7 +24,7 @@ contract UserAccount {
         uint balance = wallets[msg.sender][token];
         require(balance >= amount, "UserAccount: not enough balance");
 
-        SafeERC20.safeTransfer(IERC20(token), msg.sender, amount);
+        IERC20(token).safeTransfer(msg.sender, amount);
         wallets[msg.sender][token] = balance.sub(amount);
     }
 

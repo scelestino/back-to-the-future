@@ -96,10 +96,10 @@ const deploy = async (contractName, _args = [], overrides = {}, libraries = {}) 
     chalk.grey(extraGasInfo)
   );
 
-  await tenderly.persistArtifacts({
-    name: contractName,
-    address: deployed.address
-  });
+  // await tenderly.persistArtifacts({
+  //   name: contractName,
+  //   address: deployed.address
+  // });
 
   if (!encoded || encoded.length <= 2) return deployed;
   fs.writeFileSync(`artifacts/${contractName}.args`, encoded.slice(2));

@@ -15,6 +15,8 @@ describe("Pool", async () => {
   let lp1: SignerWithAddress
   let lp2: SignerWithAddress
 
+  let weth:ERC20Stub
+
   let sut:Pool
 
   beforeEach(async () => {
@@ -25,7 +27,7 @@ describe("Pool", async () => {
     lp2 = signers[2]
 
     const erc20Factory = (await ethers.getContractFactory('ERC20Stub', owner)) as ERC20Stub__factory
-    const weth = await erc20Factory.deploy("Wrapped ETH", "WETH")
+    weth = await erc20Factory.deploy("Wrapped ETH", "WETH")
     await weth.deployed()
     expect(weth.address).to.properAddress
 
@@ -44,9 +46,28 @@ describe("Pool", async () => {
 
   describe("A liquidy Provider", async () => {
 
-    it("should be able to deposit if it has enough balance", async () => {
+    it("should be able to deposit", async () => {
       await sut.connect(lp1).deposit(utils.parseUnits("500"))
-      expect(await sut.balance()).to.be.eq(utils.parseUnits("500"))
+      expect(await sut.connect(lp1).balance()).to.be.eq(utils.parseUnits("500"))
+    })
+
+    it("shouldn't have balance if it didn't deposit", async () => {
+      await sut.connect(lp1).deposit(utils.parseUnits("500"))
+      expect(await sut.connect(lp2).balance()).to.be.eq(utils.parseUnits("0"))
+    })
+
+  })
+
+  describe("Underlying Balance", async () => {
+
+    it("should start with balance zero", async () => {
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("0"))
+    })
+
+    it("should have a balance equals to the sum of all its deposits", async () => {
+      await sut.connect(lp1).deposit(utils.parseUnits("200"))
+      await sut.connect(lp2).deposit(utils.parseUnits("1000"))
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("1200"))
     })
 
   })

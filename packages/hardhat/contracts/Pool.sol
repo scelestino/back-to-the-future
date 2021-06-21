@@ -6,9 +6,11 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 
 contract Pool {
+  using SafeMath for uint256;
   using SafeERC20 for IERC20;
 
   address token;
+  mapping (address => uint) balances;
 
   constructor (address _token) {
     token = _token;
@@ -16,10 +18,11 @@ contract Pool {
 
   function deposit(uint amount) external {
     SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
+    balances[msg.sender] = balances[msg.sender].add(amount);
   }
 
   function balance() external view returns (uint) {
-    return IERC20(token).balanceOf(address(this));
+    return balances[msg.sender];
   }
 
 }

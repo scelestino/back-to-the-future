@@ -24,12 +24,12 @@ contract FutureStub is IFuture {
         rate = _rate;
     }
 
-    function long(uint amount) override external returns (uint) {
-        return amount.mul(rate);
+    function long(uint quantity, uint price) override external returns (uint) {
+        return quantity.mul(rate);
     }
 
-    function short(uint amount) override external returns (uint) {
-        return amount.mul(rate);
+    function short(uint quantity, uint price) override external returns (uint) {
+        return quantity.mul(rate);
     }
 
 

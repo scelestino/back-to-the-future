@@ -15,7 +15,7 @@ contract UserAccount {
     using SafeERC20 for IERC20;
     
     mapping (address => mapping (address => uint)) wallets;
-    mapping (address => Position[]) public positions;
+    mapping (address => Fill[]) public fills;
 
     function deposit(address token, uint amount) external {
         require(address(token) != address(0), "UserAccount: token is the zero address");
@@ -33,52 +33,48 @@ contract UserAccount {
         wallets[msg.sender][token] = balance.sub(amount);
     }
 
-    function noPositions(address trader) external view returns (uint){
-        return positions[trader].length;
+    function noFills(address trader) external view returns (uint){
+        return fills[trader].length;
     }
 
     function wallet(address token) public view returns (uint) {
         return wallets[msg.sender][token];
     }
 
-    function openPosition(IFuture future, int amount, int8 leverage) external {
-        require(amount != 0, "UserAccount: can't open a position with 0 amount");
-        require(leverage > 0, "UserAccount: invalid leverage");
-        
-        uint margin = abs(amount.div(leverage));
+    function placeOrder(IFuture future, int quantity, uint price, uint8 leverage) external {
+        require(quantity != 0, "UserAccount: can't open a position with 0 amount");
+        require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
+
+        //TODO this is wrong now, we need the value on quote
+        uint margin = price.div(leverage);
         require(wallet(future.quote()) > margin, "UserAccount: not enough quote balance");
 
-        if(amount > 0) {
-            uint paid = future.long(uint(amount));
+        if(quantity > 0) {
+            uint paid = future.long(uint(quantity), price);
 
-            positions[msg.sender].push(Position({
+            fills[msg.sender].push(Fill({
                 future: future,
-                amount: uint(amount),
+                amount: paid,
                 leverage: leverage,
-                quantity: int(paid)
+                quantity: quantity
             }));
 
         } else {
-            uint received = future.short(abs(amount));
+            uint received = future.short(uint(-quantity), price);
 
-            positions[msg.sender].push(Position({
+            fills[msg.sender].push(Fill({
                 future: future,
                 amount: received,
                 leverage: leverage,
-                quantity: amount
+                quantity: quantity
             }));
         }
-
     }
 
-    function abs(int x) private pure returns (uint) {
-        return uint(x >= 0 ? x : -x);
-    }
-
-    struct Position {
+    struct Fill {
         IFuture future;
         uint amount;
-        int8 leverage;
+        uint8 leverage;
         int quantity;
     }
 }

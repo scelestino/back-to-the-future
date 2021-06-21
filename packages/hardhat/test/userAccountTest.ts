@@ -185,14 +185,14 @@ describe("User Accounts", async () => {
             expect(future.address).to.properAddress
             await future.setRate(2500)
 
-            await traderAccount.openPosition(future.address, utils.parseUnits("1"), 5)
+            await traderAccount.placeOrder(future.address, utils.parseUnits("1"), 2500, 5)
 
-            await traderAccount.openPosition(future.address, utils.parseUnits("-0.5"), 5)
+            await traderAccount.placeOrder(future.address, utils.parseUnits("-0.5"), 2500, 5)
 
-            const noPositions = await traderAccount.noPositions(trader1.address);
+            const noPositions = await traderAccount.noFills(trader1.address);
 
             for (let i = 0; noPositions.gt(i); i++) {
-                const position = await traderAccount.positions(trader1.address, i);
+                const position = await traderAccount.fills(trader1.address, i);
                 
                 console.log(`position${i}.leverage`, position.leverage)
                 console.log(`position${i}.quantity`, utils.formatUnits(position.quantity))

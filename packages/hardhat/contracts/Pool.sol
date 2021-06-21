@@ -9,22 +9,22 @@ contract Pool {
   using SafeMath for uint256;
   using SafeERC20 for IERC20;
 
-  address token;
+  IERC20 token;
   mapping (address => uint) wallets;
 
   constructor (address _token) {
-    token = _token;
+    token = IERC20(_token);
   }
 
   function deposit(uint amount) external {
-    SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
+    SafeERC20.safeTransferFrom(token, msg.sender, address(this), amount);
     wallets[msg.sender] = wallets[msg.sender].add(amount);
   }
 
   function withdraw(uint amount) external {
     uint balance = wallets[msg.sender];
     require(balance >= amount, "Pool: not enough balance");
-    IERC20(token).safeTransfer(msg.sender, amount);
+    token.safeTransfer(msg.sender, amount);
     wallets[msg.sender] = balance.sub(amount);
   }
 

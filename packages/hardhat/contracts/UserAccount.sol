@@ -13,7 +13,7 @@ contract UserAccount {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
     using SafeERC20 for IERC20;
-    
+
     mapping (address => mapping (address => uint)) wallets;
     mapping (address => Fill[]) public fills;
 

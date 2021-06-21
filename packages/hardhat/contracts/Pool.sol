@@ -10,7 +10,7 @@ contract Pool {
   using SafeERC20 for IERC20;
 
   address token;
-  mapping (address => uint) balances;
+  mapping (address => uint) wallets;
 
   constructor (address _token) {
     token = _token;
@@ -18,11 +18,18 @@ contract Pool {
 
   function deposit(uint amount) external {
     SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
-    balances[msg.sender] = balances[msg.sender].add(amount);
+    wallets[msg.sender] = wallets[msg.sender].add(amount);
   }
 
-  function balance() external view returns (uint) {
-    return balances[msg.sender];
+  function withdraw(uint amount) external {
+    uint balance = wallets[msg.sender];
+    require(balance >= amount, "Pool: not enough balance");
+    IERC20(token).safeTransfer(msg.sender, amount);
+    wallets[msg.sender] = balance.sub(amount);
+  }
+
+  function wallet() external view returns (uint) {
+    return wallets[msg.sender];
   }
 
 }

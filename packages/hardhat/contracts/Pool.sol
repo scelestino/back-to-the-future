@@ -28,8 +28,8 @@ contract Pool {
     wallets[msg.sender] = balance.sub(amount);
   }
 
-  function wallet() external view returns (uint) {
-    return wallets[msg.sender];
+  function wallet(address owner) external view returns (uint) {
+    return wallets[owner];
   }
 
 }

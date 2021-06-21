@@ -48,7 +48,7 @@ describe("Pool", async () => {
 
     it("should allow liquidity provider to deposit", async () => {
       await sut.connect(lp1).deposit(utils.parseUnits("450"))
-      expect(await sut.connect(lp1).wallet()).to.be.eq(utils.parseUnits("450"))
+      expect(await sut.wallet(lp1.address)).to.be.eq(utils.parseUnits("450"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("550"))
     })
 
@@ -60,12 +60,12 @@ describe("Pool", async () => {
 
       // Setup
       await sut.connect(lp1).deposit(utils.parseUnits("200"))
-      expect(await sut.connect(lp1).wallet()).to.be.eq(utils.parseUnits("200"))
+      expect(await sut.wallet(lp1.address)).to.be.eq(utils.parseUnits("200"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("800"))
 
       // Withdrawal
       await sut.connect(lp1).withdraw(utils.parseUnits("200"))
-      expect(await sut.connect(lp1).wallet()).to.be.eq(utils.parseUnits("0"))
+      expect(await sut.wallet(lp1.address)).to.be.eq(utils.parseUnits("0"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("1000"))
 
     })
@@ -74,12 +74,12 @@ describe("Pool", async () => {
 
       // Setup
       await sut.connect(lp1).deposit(utils.parseUnits("400"))
-      expect(await sut.connect(lp1).wallet()).to.be.eq(utils.parseUnits("400"))
+      expect(await sut.wallet(lp1.address)).to.be.eq(utils.parseUnits("400"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("600"))
 
       // Withdrawal
       await sut.connect(lp1).withdraw(utils.parseUnits("100"))
-      expect(await sut.connect(lp1).wallet()).to.be.eq(utils.parseUnits("300"))
+      expect(await sut.wallet(lp1.address)).to.be.eq(utils.parseUnits("300"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("700"))
 
     })
@@ -88,7 +88,7 @@ describe("Pool", async () => {
 
       // Setup
       await sut.connect(lp1).deposit(utils.parseUnits("400"))
-      expect(await sut.connect(lp1).wallet()).to.be.eq(utils.parseUnits("400"))
+      expect(await sut.wallet(lp1.address)).to.be.eq(utils.parseUnits("400"))
 
       await expect(sut.connect(lp1).withdraw(utils.parseUnits("500"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: not enough balance'")
 
@@ -100,7 +100,7 @@ describe("Pool", async () => {
 
     it("should return zero for a liquidity provider without deposits ", async () => {
       await sut.connect(lp1).deposit(utils.parseUnits("500"))
-      expect(await sut.connect(lp2).wallet()).to.be.eq(utils.parseUnits("0"))
+      expect(await sut.wallet(lp2.address)).to.be.eq(utils.parseUnits("0"))
       expect(await weth.balanceOf(lp2.address)).to.be.eq(utils.parseUnits("1000"))
     })
 

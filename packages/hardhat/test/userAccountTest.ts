@@ -1,14 +1,14 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
 import chai from 'chai'
 import chaiAsPromised from "chai-as-promised"
-import { solidity } from "ethereum-waffle"
-import { BigNumber, utils } from 'ethers'
-import { ethers } from 'hardhat'
-import { ERC20Stub, ERC20Stub__factory, UserAccount, UserAccount__factory, FutureStub__factory } from '../typechain'
+import {solidity} from "ethereum-waffle"
+import {BigNumber, utils} from 'ethers'
+import {ethers} from 'hardhat'
+import {ERC20Stub, ERC20Stub__factory, UserAccount, UserAccount__factory, FutureStub__factory} from '../typechain'
 import fc from 'fast-check';
 
 chai.use(solidity).use(chaiAsPromised)
-const { expect } = chai
+const {expect} = chai
 
 describe("User Accounts", async () => {
 
@@ -51,7 +51,7 @@ describe("User Accounts", async () => {
             await weth.setBalance(trader.address, utils.parseUnits("100"))
             await lusd.setBalance(trader.address, utils.parseUnits("25000"))
             await weth.connect(trader).approve(userAccount.address, utils.parseUnits("100"))
-            await lusd.connect(trader).approve(userAccount.address, utils.parseUnits("25000"))   
+            await lusd.connect(trader).approve(userAccount.address, utils.parseUnits("25000"))
         }
     })
 
@@ -138,7 +138,7 @@ describe("User Accounts", async () => {
 
         it("should always keep a consistent state", async () => {
             await lusd.setBalance(trader1.address, utils.parseUnits("250000"))
-            await lusd.connect(trader1).approve(userAccount.address, BigNumber.from(2).pow(255))   
+            await lusd.connect(trader1).approve(userAccount.address, BigNumber.from(2).pow(255))
             const traderAccount = userAccount.connect(trader1)
 
             const bnArb = fc.bigIntN(80).map(BigNumber.from).map(bn => bn.abs())
@@ -148,9 +148,9 @@ describe("User Accounts", async () => {
                 const accountTokenBalance = await lusd.balanceOf(userAccount.address);
                 const traderWalletBalance = await traderAccount.wallet(lusd.address);
 
-                if(isDeposit) {
+                if (isDeposit) {
                     const deposit = traderAccount.deposit(lusd.address, amount);
-                    if(amount.gt(traderTokenBalance)) {
+                    if (amount.gt(traderTokenBalance)) {
                         await expect(deposit).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'ERC20: transfer amount exceeds balance'")
                     } else {
                         await deposit
@@ -160,18 +160,18 @@ describe("User Accounts", async () => {
                     }
                 } else {
                     const withdraw = traderAccount.withdraw(lusd.address, amount);
-                    if(amount.gt(traderWalletBalance)) {
+                    if (amount.gt(traderWalletBalance)) {
                         await expect(withdraw).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'UserAccount: not enough balance'")
                     } else {
                         await withdraw
                         expect(await lusd.balanceOf(trader1.address)).to.be.eq(traderTokenBalance.add(amount))
                         expect(await lusd.balanceOf(userAccount.address)).to.be.eq(accountTokenBalance.sub(amount))
                         expect(await traderAccount.wallet(lusd.address)).to.be.eq(traderWalletBalance.sub(amount))
-                    } 
+                    }
                 }
             }), {endOnFailure: true, verbose: true})
         })
-    })    
+    })
 
     describe("Account positions", async () => {
         it("should correctly open a long position", async () => {
@@ -187,17 +187,33 @@ describe("User Accounts", async () => {
 
             await traderAccount.placeOrder(future.address, utils.parseUnits("1"), 2500, 5)
 
+            expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
+            const position = await traderAccount.fills(trader1.address, 0);
+
+            expect(position.leverage).to.be.eq(5)
+            expect(position.quantity).to.be.eq(utils.parseUnits("1"))
+            expect(position.amount).to.be.eq(utils.parseUnits("2500"))
+        })
+
+        it("should correctly open a short position", async () => {
+            const expiry = new Date();
+            expiry.setMonth(expiry.getMonth() + 3);
+            const traderAccount = userAccount.connect(trader1)
+            await traderAccount.deposit(lusd.address, utils.parseUnits("1000"));
+            await traderAccount.deposit(weth.address, utils.parseUnits("1"));
+            const future = await futureFactory.deploy(weth.address, lusd.address, expiry.getMilliseconds());
+            await future.deployed()
+            expect(future.address).to.properAddress
+            await future.setRate(2500)
+
             await traderAccount.placeOrder(future.address, utils.parseUnits("-0.5"), 2500, 5)
 
-            const noPositions = await traderAccount.noFills(trader1.address);
+            expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
+            const position = await traderAccount.fills(trader1.address, 0);
 
-            for (let i = 0; noPositions.gt(i); i++) {
-                const position = await traderAccount.fills(trader1.address, i);
-                
-                console.log(`position${i}.leverage`, position.leverage)
-                console.log(`position${i}.quantity`, utils.formatUnits(position.quantity))
-                console.log(`position${i}.amount`, utils.formatUnits(position.amount))   
-            }
+            expect(position.leverage).to.be.eq(5)
+            expect(position.quantity).to.be.eq(utils.parseUnits("-0.5"))
+            expect(position.amount).to.be.eq(utils.parseUnits("1250"))
         })
     })
 })

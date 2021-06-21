@@ -22,13 +22,13 @@ contract Pool {
   }
 
   function deposit(uint amount) external {
-    SafeERC20.safeTransferFrom(token, msg.sender, address(this), amount);
+    token.safeTransferFrom(msg.sender, address(this), amount);
     balances[msg.sender] = balances[msg.sender].add(amount);
     totalBalance = totalBalance.add(amount);
   }
 
   function depositFee(uint amount) external {
-    SafeERC20.safeTransferFrom(token, msg.sender, address(this), amount);
+    token.safeTransferFrom(msg.sender, address(this), amount);
     totalBalance = totalBalance.add(amount);
   }
 

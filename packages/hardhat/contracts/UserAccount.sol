@@ -20,7 +20,7 @@ contract UserAccount {
     function deposit(address token, uint amount) external {
         require(address(token) != address(0), "UserAccount: token is the zero address");
 
-        SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         wallets[msg.sender][token] = wallets[msg.sender][token].add(amount);
     }
 
@@ -42,7 +42,7 @@ contract UserAccount {
     }
 
     function openPosition(IFuture future, int amount, int8 leverage) external {
-        require(amount != 0, "UserAccount: can't open a postion with 0 amount");
+        require(amount != 0, "UserAccount: can't open a position with 0 amount");
         require(leverage > 0, "UserAccount: invalid leverage");
         
         uint margin = abs(amount.div(leverage));

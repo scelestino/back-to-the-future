@@ -57,6 +57,7 @@ describe("Pool", async () => {
       expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("450"))
       expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("100", 0))
 
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("450"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("550"))
 
     })
@@ -73,6 +74,7 @@ describe("Pool", async () => {
       expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("33", 0))
       expect(await sut.shareOf(lp2.address)).to.be.eq(utils.parseUnits("66", 0))
 
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("600"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("800"))
       expect(await weth.balanceOf(lp2.address)).to.be.eq(utils.parseUnits("600"))
 
@@ -100,6 +102,7 @@ describe("Pool", async () => {
 
       await sut.connect(owner).depositFee(utils.parseUnits("100"))
       expect(await sut.balance()).to.be.eq(utils.parseUnits("700"))
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("700"))
 
     })
 
@@ -170,6 +173,7 @@ describe("Pool", async () => {
       expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("200"))
       expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("100", 0))
 
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("200"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("800"))
 
       // Withdrawal
@@ -178,6 +182,7 @@ describe("Pool", async () => {
       expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("0"))
       expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("0"))
 
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("0"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("1000"))
 
     })
@@ -199,6 +204,7 @@ describe("Pool", async () => {
       expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("300"))
       expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("100", 0))
 
+      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("300"))
       expect(await weth.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("700"))
 
     })

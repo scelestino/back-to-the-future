@@ -23,13 +23,12 @@ contract Future is IUniswapV3SwapCallback {
     IPool immutable public base;
     IPool immutable public quote;
     IUniswapV3Pool immutable pool;
-    PoolAddress.PoolKey poolKey;
     uint borrowingRate = 0;
 
     constructor(IPool _base, IPool _quote, uint24 _fee, address _factory) {
         base = _base;
         quote = _quote;
-        poolKey = PoolAddress.PoolKey({token0 : address(_base.token()), token1 : address(_quote.token()), fee : _fee});
+        PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({token0 : address(_base.token()), token1 : address(_quote.token()), fee : _fee});
         pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
     }
 
@@ -48,7 +47,7 @@ contract Future is IUniswapV3SwapCallback {
         }
     }
 
-    function long(uint quantity, uint price) external returns (uint) {
+    function long(uint quantity, uint price) external returns (uint amountReceived) {
         //TODO remove interest from price and pass slippage limit to UNI
         (, int256 amount1Delta) = pool.swap(
             address(quote),
@@ -57,9 +56,8 @@ contract Future is IUniswapV3SwapCallback {
             TickMath.MIN_SQRT_RATIO + 1,
             abi.encode("")
         );
-        uint amountReceived = uint256(- amount1Delta);
+        amountReceived = uint256(- amount1Delta);
         require(amountReceived == quantity, "Couldn't get the required amount");
-        return amountReceived;
     }
 
     function short(uint quantity, uint price) external returns (uint) {

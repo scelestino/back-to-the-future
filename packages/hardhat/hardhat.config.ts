@@ -1,4 +1,5 @@
 import {HardhatUserConfig} from "hardhat/types";
+import {config as dotEnvConfig} from "dotenv";
 
 // const { utils } = require("ethers");
 const fs = require("fs");
@@ -13,6 +14,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-etherscan";
 
+dotEnvConfig();
 
 // const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
@@ -28,108 +30,116 @@ import "@nomiclabs/hardhat-etherscan";
 //
 // Select the network you want to deploy to here:
 //
-const defaultNetwork = "localhost";
+const defaultNetwork: string = "hardhat";
+
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
 
 function mnemonic() {
-  try {
-    return fs.readFileSync("./mnemonic.txt").toString().trim();
-  } catch (e) {
-    if (defaultNetwork !== "localhost") {
-      console.log("☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`.")
+    try {
+        return fs.readFileSync("./mnemonic.txt").toString().trim();
+    } catch (e) {
+        if (defaultNetwork !== "hardhat" && defaultNetwork !== "localhost") {
+            console.log("☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`.")
+        }
     }
-  }
-  return "";
+    return "";
 }
 
-const config:HardhatUserConfig = {
-  defaultNetwork,
+const config: HardhatUserConfig = {
+    defaultNetwork,
 
-  // don't forget to set your provider like:
-  // REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
-  // (then your frontend will talk to your contracts on the live network!)
-  // (you will need to restart the `yarn run start` dev server after editing the .env)
+    // don't forget to set your provider like:
+    // REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
+    // (then your frontend will talk to your contracts on the live network!)
+    // (you will need to restart the `yarn run start` dev server after editing the .env)
 
-  networks: {
-    localhost: {
-      url: "http://localhost:8545",
-      /*
-        notice no mnemonic here? it will just use account 0 of the hardhat node to deploy
-        (you can put in a mnemonic here to set the deployer locally)
-      */
+    networks: {
+        hardhat: {
+            forking: {
+                url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+                blockNumber: 12628614
+            }
+        },
+        localhost: {
+            url: "http://localhost:8545",
+            /*
+              notice no mnemonic here? it will just use account 0 of the hardhat node to deploy
+              (you can put in a mnemonic here to set the deployer locally)
+            */
+        },
+        rinkeby: {
+            url: "https://rinkeby.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
+        kovan: {
+            url: "https://kovan.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
+        mainnet: {
+            url: "https://mainnet.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
+        ropsten: {
+            url: "https://ropsten.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
+        goerli: {
+            url: "https://goerli.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
+        xdai: {
+            url: 'https://rpc.xdaichain.com/',
+            gasPrice: 1000000000,
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
+        matic: {
+            url: 'https://rpc-mainnet.maticvigil.com/',
+            gasPrice: 1000000000,
+            accounts: {
+                mnemonic: mnemonic(),
+            },
+        },
     },
-    rinkeby: {
-      url: "https://rinkeby.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    kovan: {
-      url: "https://kovan.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    mainnet: {
-      url: "https://mainnet.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    ropsten: {
-      url: "https://ropsten.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    goerli: {
-      url: "https://goerli.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    xdai: {
-      url: 'https://rpc.xdaichain.com/',
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    matic: {
-      url: 'https://rpc-mainnet.maticvigil.com/',
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-  },
-  solidity: {
-    compilers: [
-      {
-        version: "0.7.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
-      },
-      {
-        version: "0.6.7",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
-      }
-    ],
+    solidity: {
+        compilers: [
+            {
+                version: "0.7.6",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200
+                    }
+                }
+            },
+            {
+                version: "0.6.7",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200
+                    }
+                }
+            }
+        ],
 
-  },
-  // etherscan: {
-  //   // Your API key for Etherscan
-  //   // Obtain one at https://etherscan.io/
-  //   apiKey: "PSW8C433Q667DVEX5BCRMGNAH9FSGFZ7Q8"
-  // }
+    },
+    // etherscan: {
+    //   // Your API key for Etherscan
+    //   // Obtain one at https://etherscan.io/
+    //   apiKey: "PSW8C433Q667DVEX5BCRMGNAH9FSGFZ7Q8"
+    // }
 };
 
 export default config;

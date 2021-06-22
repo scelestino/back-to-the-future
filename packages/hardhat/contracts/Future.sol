@@ -6,6 +6,7 @@ import "hardhat/console.sol";
 
 import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
+import '@uniswap/v3-core/contracts/libraries/SqrtPriceMath.sol';
 import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 
 import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
@@ -28,8 +29,7 @@ contract Future is IUniswapV3SwapCallback {
     constructor(IPool _base, IPool _quote, uint24 _fee, address _factory) {
         base = _base;
         quote = _quote;
-        PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({token0 : address(_base.token()), token1 : address(_quote.token()), fee : _fee});
-        pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
+        pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, PoolAddress.getPoolKey(address(_base.token()), address(_quote.token()), _fee)));
     }
 
     function setBorrowingRate(uint _borrowingRate) external {
@@ -41,17 +41,20 @@ contract Future is IUniswapV3SwapCallback {
         require(amount0Delta > 0 || amount1Delta > 0);
 
         if (amount0Delta > 0) {
-            base.borrow(uint(amount0Delta), address(pool));
+            quote.borrow(uint(amount0Delta), address(pool));
         } else {
-            quote.borrow(uint(amount1Delta), address(pool));
+            base.borrow(uint(amount1Delta), address(pool));
         }
     }
 
     function long(uint quantity, uint price) external returns (uint amountReceived) {
+        // bool zeroForOne = tokenIn < tokenOut;
+        bool zeroForOne = address(quote.token()) < address(base.token());
+
         //TODO remove interest from price and pass slippage limit to UNI
         (, int256 amount1Delta) = pool.swap(
-            address(quote),
-            true,
+            address(base),
+            zeroForOne,
             - quantity.toInt256(),
             TickMath.MIN_SQRT_RATIO + 1,
             abi.encode("")
@@ -60,16 +63,21 @@ contract Future is IUniswapV3SwapCallback {
         require(amountReceived == quantity, "Couldn't get the required amount");
     }
 
-    function short(uint quantity, uint price) external returns (uint) {
+    function short(uint quantity, uint price) external returns (uint amountOut) {
         //TODO remove interest from price and pass slippage limit to UNI
+
+        // bool zeroForOne = tokenIn < tokenOut;
+        bool zeroForOne = address(base.token()) < address(quote.token());
+
         (int256 amount0,) = pool.swap(
-            address(base),
-            false,
+            address(quote),
+            zeroForOne,
             quantity.toInt256(),
             TickMath.MAX_SQRT_RATIO - 1,
             abi.encode("")
         );
 
-        return uint(- amount0);
+        amountOut = uint(- amount0);
+        require(amountOut >= price, 'Too little received');
     }
 }

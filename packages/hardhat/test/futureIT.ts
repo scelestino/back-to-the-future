@@ -76,7 +76,7 @@ describe("Futures", async () => {
         expect(await dai.balanceOf(daiPool.address)).to.be.eq(utils.parseUnits("25000"))
 
         const futureFactory = (await ethers.getContractFactory('Future', owner)) as Future__factory
-        future = await futureFactory.deploy(daiPool.address, wethPool.address, 500, uniswapFactory)
+        future = await futureFactory.deploy(wethPool.address, daiPool.address, 500, uniswapFactory)
         await future.deployed()
         expect(future.address).to.properAddress
     })
@@ -99,7 +99,7 @@ describe("Futures", async () => {
             const initialDaiHoldings = await dai.balanceOf(daiPool.address);
             const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-            const price = utils.parseUnits("2531");
+            const price = utils.parseUnits("2525");
             const quantity = utils.parseEther("1");
 
             await future.short(quantity, price)

@@ -24,12 +24,14 @@ contract Future is IUniswapV3SwapCallback {
     IPool immutable public base;
     IPool immutable public quote;
     IUniswapV3Pool immutable pool;
+    PoolAddress.PoolKey poolKey;
     uint borrowingRate = 0;
 
     constructor(IPool _base, IPool _quote, uint24 _fee, address _factory) {
         base = _base;
         quote = _quote;
-        pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, PoolAddress.getPoolKey(address(_base.token()), address(_quote.token()), _fee)));
+        poolKey = PoolAddress.getPoolKey(address(_base.token()), address(_quote.token()), _fee);
+        pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
     }
 
     function setBorrowingRate(uint _borrowingRate) external {
@@ -40,10 +42,11 @@ contract Future is IUniswapV3SwapCallback {
         require(msg.sender == address(pool), "Caller was not the expected UNI pool");
         require(amount0Delta > 0 || amount1Delta > 0);
 
+        bool amount0isBase = address(base.token()) == poolKey.token0;
         if (amount0Delta > 0) {
-            quote.borrow(uint(amount0Delta), address(pool));
+            (amount0isBase ? base : quote).borrow(uint(amount0Delta), address(pool));
         } else {
-            base.borrow(uint(amount1Delta), address(pool));
+            (amount0isBase ? quote : base).borrow(uint(amount1Delta), address(pool));
         }
     }
 
@@ -52,14 +55,14 @@ contract Future is IUniswapV3SwapCallback {
         bool zeroForOne = address(quote.token()) < address(base.token());
 
         //TODO remove interest from price and pass slippage limit to UNI
-        (, int256 amount1Delta) = pool.swap(
+        (int256 amount0, int256 amount1) = pool.swap(
             address(base),
             zeroForOne,
             - quantity.toInt256(),
-            TickMath.MIN_SQRT_RATIO + 1,
+            (zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1),
             abi.encode("")
         );
-        amountReceived = uint256(- amount1Delta);
+        amountReceived = uint256(- (zeroForOne ? amount1 : amount0));
         require(amountReceived == quantity, "Couldn't get the required amount");
     }
 
@@ -69,15 +72,14 @@ contract Future is IUniswapV3SwapCallback {
         // bool zeroForOne = tokenIn < tokenOut;
         bool zeroForOne = address(base.token()) < address(quote.token());
 
-        (int256 amount0,) = pool.swap(
+        (int256 amount0, int256 amount1) = pool.swap(
             address(quote),
             zeroForOne,
             quantity.toInt256(),
-            TickMath.MAX_SQRT_RATIO - 1,
+            (zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1),
             abi.encode("")
         );
-
-        amountOut = uint(- amount0);
+        amountOut = uint256(- (zeroForOne ? amount1 : amount0));
         require(amountOut >= price, 'Too little received');
     }
 }

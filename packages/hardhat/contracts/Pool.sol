@@ -16,8 +16,8 @@ contract Pool {
   uint256 public totalShare = 0;
   mapping (address => uint256) shares;
 
-  constructor (address _token) {
-    token = ERC20(_token);
+  constructor (ERC20 _token) {
+    token = _token;
   }
 
   function deposit(uint256 amount) external returns (uint256 share) {

@@ -5,6 +5,7 @@ import "./interfaces/IPool.sol";
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
+import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 
 contract Pool is IPool {
   using SafeERC20 for IERC20;
@@ -12,37 +13,62 @@ contract Pool is IPool {
 
   IERC20 public override token;
 
-  uint256 totalBalance = 0;
-  mapping(address => uint) balances;
-
-  uint256 totalShare = 0;
-  mapping(address => uint) shares;
+  uint256 public balance = 0;
+  uint256 public totalShare = 0;
+  mapping (address => uint256) shares;
 
   constructor (IERC20 _token) {
     token = _token;
   }
 
-  function deposit(uint amount) external {
+  function deposit(uint256 amount) external returns (uint256 share) {
+
+    require(amount > 0, "Pool: deposit amount should be greater than zero");
+
+    share = totalShare > 0
+        ? FullMath.mulDiv(amount, totalShare, balance)
+        : amount.mul(1000000);
+
+    balance = balance.add(amount);
+    totalShare = totalShare.add(share);
+    shares[msg.sender] = shares[msg.sender].add(share);
+
     token.safeTransferFrom(msg.sender, address(this), amount);
-    balances[msg.sender] = balances[msg.sender].add(amount);
-    totalBalance = totalBalance.add(amount);
+
   }
 
   function depositFee(uint amount) external {
+    balance = balance.add(amount);
     token.safeTransferFrom(msg.sender, address(this), amount);
-    totalBalance = totalBalance.add(amount);
   }
 
   function withdraw(uint amount) external {
-    uint balance = balances[msg.sender];
-    require(balance >= amount, "Pool: not enough balance");
+
+    require(amount > 0, "Pool: withdraw amount should be greater than zero");
+    require(balance >= amount, "Pool: withdraw amount greater than balance");
+
+    uint256 share = FullMath.mulDiv(totalShare, amount, balance);
+
+    require(shares[msg.sender] >= share, "Pool: withdraw amount greater than sender balance");
+
+    balance = balance.sub(amount);
+    totalShare = totalShare.sub(share);
+    shares[msg.sender] = shares[msg.sender].sub(share);
+
     token.safeTransfer(msg.sender, amount);
-    balances[msg.sender] = balance.sub(amount);
-    totalBalance = totalBalance.sub(amount);
+
   }
 
-  function wallet(address owner) external view returns (uint) {
-    return balances[owner];
+  function balanceOf(address owner) external view returns (uint) {
+    return totalShare > 0
+        ? FullMath.mulDiv(balance, shares[owner], totalShare)
+        : 0;
+  }
+
+  function shareOf(address owner) external view returns (uint) {
+    return totalShare > 0
+        ? FullMath.mulDiv(100, shares[owner], totalShare)
+        : 0;
   }
 
   //TODO add security

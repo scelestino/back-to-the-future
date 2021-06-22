@@ -1,24 +1,23 @@
 pragma solidity >=0.6.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
-import "./interfaces/IPool.sol";
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 
-contract Pool is IPool {
-  using SafeERC20 for IERC20;
+contract Pool {
+  using SafeERC20 for ERC20;
   using LowGasSafeMath for uint256;
 
-  IERC20 public override token;
+  ERC20 token;
 
   uint256 public balance = 0;
   uint256 public totalShare = 0;
   mapping (address => uint256) shares;
 
-  constructor (IERC20 _token) {
-    token = _token;
+  constructor (address _token) {
+    token = ERC20(_token);
   }
 
   function deposit(uint256 amount) external returns (uint256 share) {
@@ -27,7 +26,7 @@ contract Pool is IPool {
 
     share = totalShare > 0
         ? FullMath.mulDiv(amount, totalShare, balance)
-        : amount.mul(1000000);
+        : amount.mul(10 ** (18 - token.decimals()));
 
     balance = balance.add(amount);
     totalShare = totalShare.add(share);

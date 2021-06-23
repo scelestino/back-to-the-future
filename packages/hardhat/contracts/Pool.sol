@@ -6,13 +6,16 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 
-contract Pool {
+import "./interfaces/IPool.sol";
+
+contract Pool is IPool {
   using SafeERC20 for ERC20;
   using LowGasSafeMath for uint256;
 
-  ERC20 token;
+  ERC20 public override token;
 
   uint256 public balance = 0;
+  uint256 public borrowed = 0;
   uint256 public totalShare = 0;
   mapping (address => uint256) shares;
 
@@ -34,11 +37,6 @@ contract Pool {
 
     token.safeTransferFrom(msg.sender, address(this), amount);
 
-  }
-
-  function depositFee(uint amount) external {
-    balance = balance.add(amount);
-    token.safeTransferFrom(msg.sender, address(this), amount);
   }
 
   function withdraw(uint amount) external {
@@ -72,8 +70,24 @@ contract Pool {
 
   //TODO add security
   function borrow(uint amount, address recipient) external override {
+
+    require(amount > 0, "Pool: borrow amount should be greater than zero");
+
+    borrowed = borrowed.add(amount);
     token.safeTransfer(recipient, amount);
-    //TODO accounting
+
+  }
+
+  //TODO add security
+  function repay(uint amount, uint interest) external override {
+
+    require(amount > 0, "Pool: repay amount should be greater than zero");
+    require(interest > 0, "Pool: repay interest should be greater than zero");
+    require(borrowed >= amount, "Pool: repay amount should be equals or lower than borrowed");
+
+    balance = balance.add(interest);
+    borrowed = borrowed.sub(amount);
+
   }
 
 }

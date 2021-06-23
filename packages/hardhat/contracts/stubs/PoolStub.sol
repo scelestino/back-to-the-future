@@ -8,12 +8,16 @@ import "../interfaces/IPool.sol";
 
 contract PoolStub is IPool {
 
-    IERC20 public override token;
+    ERC20 public override token;
 
-    constructor(IERC20 _token) {
+    constructor(ERC20 _token) {
         token = _token;
     }
 
     function borrow(uint amount, address recipient) external override {
+    }
+
+    function repay(uint amount, uint interest) external override {
+
     }
 }

@@ -3,16 +3,17 @@ pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
 import "hardhat/console.sol";
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/math/SignedSafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
+import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import "./interfaces/IFuture.sol";
 
 contract UserAccount {
-    using SafeMath for uint256;
-    using SignedSafeMath for int256;
+    using LowGasSafeMath for uint256;
     using SafeERC20 for IERC20;
+
+    uint256 constant WAD = 10 ** 18;
 
     mapping(address => mapping(address => uint)) wallets;
     mapping(address => Fill[]) public fills;
@@ -41,31 +42,56 @@ contract UserAccount {
         return wallets[msg.sender][token];
     }
 
+    function position(address trader, IFuture future) public view returns (Position memory p) {
+        p = Position(future, 0, 0, 0);
+        Fill[] memory traderFills = fills[trader];
+        for (uint i = 0; i < traderFills.length; i++) {
+            Fill memory fill = traderFills[i];
+            if(fill.future == future) {
+                p.cost += fill.cost;
+                p.quantity += fill.quantity;
+                p.margin += fill.cost / fill.leverage;
+            }
+        }
+    }
+
     function placeOrder(IFuture future, int quantity, uint price, uint8 leverage) external {
         require(quantity != 0, "UserAccount: can't open a position with 0 amount");
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 
-        //TODO this is wrong now, we need the value on quote
-        uint margin = price.div(leverage);
-        require(wallet(future.quote()) > margin, "UserAccount: not enough quote balance");
+        uint margin = position(msg.sender, future).margin + FullMath.mulDivRoundingUp(abs(quantity), price, leverage * WAD);
 
-        uint amount = quantity > 0 ?
+        require(margin <= wallet(future.quote()), "UserAccount: not enough available margin");
+
+        uint cost = quantity > 0 ?
             future.long(uint(quantity), price) :
             future.short(uint(- quantity), price);
 
+
         fills[msg.sender].push(Fill({
-            future : future,
-            amount : amount,
-            leverage : leverage,
-            quantity : quantity
+            future: future,
+            cost: cost,
+            leverage: leverage,
+            quantity: quantity
         }));
+    }
+
+    function abs(int x) internal pure returns (uint) {
+        return uint(x >= 0 ? x : -x);
     }
 
     struct Fill {
         IFuture future;
-        uint amount;
+        uint cost;
         uint8 leverage;
+        int quantity;
+    }
+
+    struct Position {
+        IFuture future;
+        uint cost;
+        uint margin;
         int quantity;
     }
 }

@@ -8,6 +8,8 @@ import "../interfaces/IFuture.sol";
 contract FutureStub is IFuture {
     using SafeMath for uint256;
 
+    uint256 constant WAD = 10 ** 18;
+
     address public override base;
     address public override quote;
     uint public override expiry;
@@ -25,11 +27,11 @@ contract FutureStub is IFuture {
     }
 
     function long(uint quantity, uint price) override external returns (uint) {
-        return quantity.mul(rate);
+        return quantity.mul(rate).div(WAD);
     }
 
     function short(uint quantity, uint price) override external returns (uint) {
-        return quantity.mul(rate);
+        return quantity.mul(rate).div(WAD);
     }
 
 

@@ -14,6 +14,7 @@ describe("Pool", async () => {
   let owner: SignerWithAddress
   let lp1: SignerWithAddress
   let lp2: SignerWithAddress
+  let uniswap: string
 
   let weth: ERC20Stub
 
@@ -25,6 +26,8 @@ describe("Pool", async () => {
     owner = signers[0]
     lp1 = signers[1]
     lp2 = signers[2]
+
+    uniswap = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
 
     const erc20Factory = (await ethers.getContractFactory('ERC20Stub', owner)) as ERC20Stub__factory
     weth = await erc20Factory.deploy("Wrapped ETH", "WETH")
@@ -44,6 +47,8 @@ describe("Pool", async () => {
 
     await weth.setBalance(lp2.address, utils.parseUnits("1000"))
     await weth.connect(lp2).approve(sut.address, ethers.constants.MaxUint256)
+
+    await weth.setBalance(uniswap, utils.parseUnits("0"))
 
   })
 
@@ -93,57 +98,77 @@ describe("Pool", async () => {
 
   })
 
-  describe("DepositFee", async () => {
+  describe("Borrow", async () => {
 
-    it("should increase balance", async () => {
-
-      await sut.connect(lp1).deposit(utils.parseUnits("600"))
-      expect(await sut.balance()).to.be.eq(utils.parseUnits("600"))
-
-      await sut.connect(owner).depositFee(utils.parseUnits("100"))
-      expect(await sut.balance()).to.be.eq(utils.parseUnits("700"))
-      expect(await weth.balanceOf(sut.address)).to.be.eq(utils.parseUnits("700"))
-
+    it("shouldn't allow borrow zero", async () => {
+      await expect(sut.borrow(utils.parseUnits("0"), owner.address)).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: borrow amount should be greater than zero'");
     })
 
-    it("should increase liquidity provider balance", async () => {
-
-      await sut.connect(lp1).deposit(utils.parseUnits("100"))
-      expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("100"))
-
-      await sut.connect(owner).depositFee(utils.parseUnits("150"))
-      expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("250"))
-
-    })
-
-    it("should increase liquidity provider balances proportionally to their shares", async () => {
-
-      await sut.connect(lp1).deposit(utils.parseUnits("900"))
-      await sut.connect(lp2).deposit(utils.parseUnits("100"))
-
-      expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("900"))
-      expect(await sut.balanceOf(lp2.address)).to.be.eq(utils.parseUnits("100"))
-
-      await sut.connect(owner).depositFee(utils.parseUnits("500"))
-      expect(await sut.balanceOf(lp1.address)).to.be.eq(utils.parseUnits("1350"))
-      expect(await sut.balanceOf(lp2.address)).to.be.eq(utils.parseUnits("150"))
-
-    })
-
-    it("shouldn't change liquidity provider shares", async () => {
+    it("should allow borrow", async () => {
 
       await sut.connect(lp1).deposit(utils.parseUnits("300"))
-      await sut.connect(lp2).deposit(utils.parseUnits("200"))
+      await sut.borrow(utils.parseUnits("100"), uniswap)
 
-      expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("60", 0))
-      expect(await sut.shareOf(lp2.address)).to.be.eq(utils.parseUnits("40", 0))
-
-      await sut.connect(owner).depositFee(utils.parseUnits("100"))
-      expect(await sut.shareOf(lp1.address)).to.be.eq(utils.parseUnits("60", 0))
-      expect(await sut.shareOf(lp2.address)).to.be.eq(utils.parseUnits("40", 0))
+      expect(await sut.borrowed()).to.be.eq(utils.parseUnits("100"))
+      expect(await weth.balanceOf(uniswap)).to.be.eq(utils.parseUnits("100"))
 
     })
 
+    it("shouldn't change balance", async () => {
+
+      await sut.connect(lp1).deposit(utils.parseUnits("300"))
+      await sut.borrow(utils.parseUnits("100"), uniswap)
+
+      expect(await sut.balance()).to.be.eq(utils.parseUnits("300"))
+
+    })
+
+  })
+
+  describe("Repay", async () => {
+
+    it("shouldn't allow repay amount zero", async () => {
+      await expect(sut.repay(utils.parseUnits("0"), utils.parseUnits("1"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: repay amount should be greater than zero'");
+    })
+
+    it("shouldn't allow repay interest zero", async () => {
+      await expect(sut.repay(utils.parseUnits("1"), utils.parseUnits("0"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: repay interest should be greater than zero'");
+    })
+
+    it("shouldn't allow repay more than borrowed", async () => {
+
+      await sut.connect(lp1).deposit(utils.parseUnits("300"))
+      await sut.borrow(utils.parseUnits("200"), uniswap)
+
+      await expect(sut.repay(utils.parseUnits("300"), utils.parseUnits("10"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: repay amount should be equals or lower than borrowed'");
+
+    })
+
+    it("should add interest to balance", async () => {
+
+      await sut.connect(lp1).deposit(utils.parseUnits("500"))
+      await sut.borrow(utils.parseUnits("500"), uniswap)
+
+      expect(await sut.balance()).to.be.eq(utils.parseUnits("500"))
+
+      await sut.repay(utils.parseUnits("500"), utils.parseUnits("20"))
+
+      expect(await sut.balance()).to.be.eq(utils.parseUnits("520"))
+
+    })
+
+    it("should subtract amount to borrowed", async () => {
+
+      await sut.connect(lp1).deposit(utils.parseUnits("400"))
+      await sut.borrow(utils.parseUnits("200"), uniswap)
+
+      expect(await sut.borrowed()).to.be.eq(utils.parseUnits("200"))
+
+      await sut.repay(utils.parseUnits("100"), utils.parseUnits("20"))
+
+      expect(await sut.borrowed()).to.be.eq(utils.parseUnits("100"))
+
+    })
 
   })
 

@@ -148,7 +148,7 @@ describe("User Accounts", async () => {
         })
     })
 
-    describe.only("Account positions", async () => {
+    describe("Account positions", async () => {
       const expiry = new Date();
       expiry.setMonth(expiry.getMonth() + 3);
       const price = utils.parseUnits("2500");

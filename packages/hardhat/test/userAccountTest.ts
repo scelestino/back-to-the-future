@@ -147,61 +147,104 @@ describe("User Accounts", async () => {
         })
     })
 
-    describe("Account positions", async () => {
+    describe.only("Account positions", async () => {
         const expiry = new Date();
         expiry.setMonth(expiry.getMonth() + 3);
+        let price = utils.parseUnits("2500");
 
-        ["2", "-2"].forEach(quantity => {
-            it.only(`should only accept placing orders if the available margin is enough qty=${quantity}`, async () => {
+        [[utils.parseUnits("2")],
+            [utils.parseUnits("-2")]].forEach(([quantity]) => {
+
+
+            it(`should only accept placing orders if the available margin is enough qty=${quantity}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
                 await traderAccount.deposit(lusd.address, utils.parseUnits("2000"));
                 const future = await futureFactory.deploy(weth.address, lusd.address, expiry.getMilliseconds());
                 await future.deployed()
                 expect(future.address).to.properAddress
-                await future.setRate(utils.parseUnits("2500"))
+                await future.setRate(2500)
 
-                await traderAccount.placeOrder(future.address, utils.parseUnits(quantity), utils.parseUnits("2500"), 5)
+                await traderAccount.placeOrder(future.address, quantity, price, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                 let fill = await traderAccount.fills(trader1.address, 0);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(utils.parseUnits(quantity))
-                expect(fill.cost).to.be.eq(utils.parseUnits("5000"))
-                // Used margin so far 2 * 2500 / 5 = 1000
+                expect(fill.quantity).to.be.eq(quantity)
+                expect(fill.cost).to.be.eq(utils.parseUnits("5000").mul(-1))
 
-                await traderAccount.placeOrder(future.address, utils.parseUnits(quantity), utils.parseUnits("2500"), 5)
+                let position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(quantity)
+                expect(position.cost).to.be.eq(utils.parseUnits("5000").mul(-1))
+                expect(position.future).to.be.eq(future.address)
+                // Used margin so far 2 * 2500 / 5 = 1000
+                expect(position.margin).to.be.eq(utils.parseUnits("1000"))
+
+                await traderAccount.placeOrder(future.address, quantity, price, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(2);
                 fill = await traderAccount.fills(trader1.address, 1);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(utils.parseUnits(quantity))
-                expect(fill.cost).to.be.eq(utils.parseUnits("5000"))
+                expect(fill.quantity).to.be.eq(quantity)
+                expect(fill.cost).to.be.eq(utils.parseUnits("5000").mul(-1))
+
+                position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(quantity.mul(2))
+                expect(position.cost).to.be.eq(utils.parseUnits("10000").mul(-1))
+                expect(position.future).to.be.eq(future.address)
                 // Used margin so far (2+2) * 2500 / 5 = 2000
+                expect(position.margin).to.be.eq(utils.parseUnits("2000"))
 
                 // Fails as the total margin required is (2+2+2) * 2500 / 5 = 3000
-                return expect(traderAccount.placeOrder(future.address, utils.parseUnits(quantity), utils.parseUnits("2500"), 5))
+                return expect(traderAccount.placeOrder(future.address, quantity, price, 5))
                     .to.be.eventually.rejectedWith(Error, "UserAccount: not enough available margin")
             })
         })
 
-        // it(`should allow opposite orders if they'll reduce an existing position`, async () => {
-        //     const traderAccount = userAccount.connect(trader1)
-        //     await traderAccount.deposit(lusd.address, utils.parseUnits("1500"));
-        //     const future = await futureFactory.deploy(weth.address, lusd.address, expiry.getMilliseconds());
-        //     await future.deployed()
-        //     expect(future.address).to.properAddress
-        //     await future.setRate(2500)
-        //
-        //     await traderAccount.placeOrder(future.address, utils.parseUnits("3"), utils.parseUnits("2500"), 5)
-        //
-        //     expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
-        //     const fill = await traderAccount.fills(trader1.address, 0);
-        //
-        //     expect(fill.leverage).to.be.eq(5)
-        //     expect(fill.quantity).to.be.eq(utils.parseUnits("3"))
-        //     expect(fill.cost).to.be.eq(utils.parseUnits("7500"))
-        // })
+            [[utils.parseUnits("2")],
+            [utils.parseUnits("-2")]].forEach(([quantity]) => {
+
+            it(`should allow opposite orders if they'll reduce an existing position qty=${quantity}`, async () => {
+                const traderAccount = userAccount.connect(trader1)
+                await traderAccount.deposit(lusd.address, utils.parseUnits("1000"));
+                const future = await futureFactory.deploy(weth.address, lusd.address, expiry.getMilliseconds());
+                await future.deployed()
+                expect(future.address).to.properAddress
+                await future.setRate(2500)
+
+                await traderAccount.placeOrder(future.address, quantity, price, 5)
+
+                expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
+                let fill = await traderAccount.fills(trader1.address, 0);
+
+                expect(fill.leverage).to.be.eq(5)
+                expect(fill.quantity).to.be.eq(quantity)
+                expect(fill.cost).to.be.eq(utils.parseUnits("5000").mul(-1))
+
+                let position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(quantity)
+                expect(position.cost).to.be.eq(utils.parseUnits("5000").mul(-1))
+                expect(position.future).to.be.eq(future.address)
+                // Used margin so far 2 * 2500 / 5 = 1000
+                expect(position.margin).to.be.eq(utils.parseUnits("1000"))
+
+                await traderAccount.placeOrder(future.address, quantity.div(2).mul(-1), price, 5)
+
+                expect(await traderAccount.noFills(trader1.address)).to.be.eq(2);
+                fill = await traderAccount.fills(trader1.address, 1);
+
+                expect(fill.leverage).to.be.eq(5)
+                expect(fill.quantity).to.be.eq(quantity.div(2).mul(-1))
+                expect(fill.cost).to.be.eq(price)
+
+                position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(quantity.div(2))
+                expect(position.cost).to.be.eq(price.mul(-1))
+                expect(position.future).to.be.eq(future.address)
+                // Used margin so far 1 * 2500 / 5 = 500
+                expect(position.margin).to.be.eq(utils.parseUnits("500"))
+            })
+        })
     })
 })

@@ -47,10 +47,10 @@ contract UserAccount {
         Fill[] memory traderFills = fills[trader];
         for (uint i = 0; i < traderFills.length; i++) {
             Fill memory fill = traderFills[i];
-            if(fill.future == future) {
+            if (fill.future == future) {
                 p.cost += fill.cost;
                 p.quantity += fill.quantity;
-                p.margin += fill.cost / fill.leverage;
+                p.margin += abs(fill.cost / fill.leverage);
             }
         }
     }
@@ -60,37 +60,42 @@ contract UserAccount {
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 
-        uint margin = position(msg.sender, future).margin + FullMath.mulDivRoundingUp(abs(quantity), price, leverage * WAD);
+        Position memory position = position(msg.sender, future);
+        int newQuantity = position.quantity + quantity;
 
-        require(margin <= wallet(future.quote()), "UserAccount: not enough available margin");
+        if (newQuantity > position.quantity) {
+            uint margin = position.margin + FullMath.mulDivRoundingUp(abs(quantity), price, leverage * WAD);
+            require(margin <= wallet(future.quote()), "UserAccount: not enough available margin");
+        }
 
-        uint cost = quantity > 0 ?
-            future.long(uint(quantity), price) :
-            future.short(uint(- quantity), price);
+        int cost = quantity > 0 ?
+            future.long(quantity, price) :
+            future.short(quantity, price);
 
+        console.logInt(cost);
 
         fills[msg.sender].push(Fill({
-            future: future,
-            cost: cost,
-            leverage: leverage,
-            quantity: quantity
+            future : future,
+            cost : cost,
+            leverage : leverage,
+            quantity : quantity
         }));
     }
 
     function abs(int x) internal pure returns (uint) {
-        return uint(x >= 0 ? x : -x);
+        return uint(x >= 0 ? x : - x);
     }
 
     struct Fill {
         IFuture future;
-        uint cost;
+        int cost;
         uint8 leverage;
         int quantity;
     }
 
     struct Position {
         IFuture future;
-        uint cost;
+        int cost;
         uint margin;
         int quantity;
     }

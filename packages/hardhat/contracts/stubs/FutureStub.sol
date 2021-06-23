@@ -2,19 +2,17 @@ pragma solidity >=0.6.0 <0.9.0;
 pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import "../interfaces/IFuture.sol";
 
 contract FutureStub is IFuture {
-    using SafeMath for uint256;
-
-    uint256 constant WAD = 10 ** 18;
+    using LowGasSafeMath for int256;
 
     address public override base;
     address public override quote;
     uint public override expiry;
 
-    uint rate = 1;
+    int rate = 1;
 
     constructor(address _base, address _quote, uint _expiry) {
         base = _base;
@@ -22,17 +20,15 @@ contract FutureStub is IFuture {
         expiry = _expiry;
     }     
 
-    function setRate(uint _rate) external {
+    function setRate(int _rate) external {
         rate = _rate;
     }
 
-    function long(uint quantity, uint price) override external returns (uint) {
-        return quantity.mul(rate).div(WAD);
+    function long(int quantity, uint price) override external returns (int) {
+        return -quantity * rate;
     }
 
-    function short(uint quantity, uint price) override external returns (uint) {
-        return quantity.mul(rate).div(WAD);
+    function short(int quantity, uint price) override external returns (int) {
+        return -quantity * rate;
     }
-
-
 }

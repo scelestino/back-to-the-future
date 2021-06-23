@@ -7,6 +7,6 @@ interface IFuture {
     function quote() external returns (address);
     function expiry() external returns (uint);
     
-    function long(uint quantity, uint price) external returns (uint);
-    function short(uint quantity, uint price) external returns (uint);
+    function long(int quantity, uint price) external returns (int);
+    function short(int quantity, uint price) external returns (int);
 }

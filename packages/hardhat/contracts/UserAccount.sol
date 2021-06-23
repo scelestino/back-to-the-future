@@ -14,8 +14,8 @@ contract UserAccount {
     using SignedSafeMath for int256;
     using SafeERC20 for IERC20;
 
-    mapping (address => mapping (address => uint)) wallets;
-    mapping (address => Fill[]) public fills;
+    mapping(address => mapping(address => uint)) wallets;
+    mapping(address => Fill[]) public fills;
 
     function deposit(address token, uint amount) external {
         require(address(token) != address(0), "UserAccount: token is the zero address");
@@ -43,32 +43,23 @@ contract UserAccount {
 
     function placeOrder(IFuture future, int quantity, uint price, uint8 leverage) external {
         require(quantity != 0, "UserAccount: can't open a position with 0 amount");
+        //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 
         //TODO this is wrong now, we need the value on quote
         uint margin = price.div(leverage);
         require(wallet(future.quote()) > margin, "UserAccount: not enough quote balance");
 
-        if(quantity > 0) {
-            uint paid = future.long(uint(quantity), price);
+        uint amount = quantity > 0 ?
+            future.long(uint(quantity), price) :
+            future.short(uint(- quantity), price);
 
-            fills[msg.sender].push(Fill({
-                future: future,
-                amount: paid,
-                leverage: leverage,
-                quantity: quantity
-            }));
-
-        } else {
-            uint received = future.short(uint(-quantity), price);
-
-            fills[msg.sender].push(Fill({
-                future: future,
-                amount: received,
-                leverage: leverage,
-                quantity: quantity
-            }));
-        }
+        fills[msg.sender].push(Fill({
+            future : future,
+            amount : amount,
+            leverage : leverage,
+            quantity : quantity
+        }));
     }
 
     struct Fill {

@@ -105,6 +105,13 @@ describe("Futures", async () => {
                 expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.sub(quantity))
             })
         })
+
+        describe("Futures can be priced", async () => {
+            it("can compute the spot price", async () => {
+                const price = await future.getPrice()
+                expect(price).to.be.eq(utils.parseUnits("0.000395460253974251"))
+            })
+        });
     })
 
     describe("Future base/quote, pair base/quote", async () => {
@@ -187,5 +194,12 @@ describe("Futures", async () => {
                 expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.sub(quantity))
             })
         })
+
+        describe("Futures can be priced", async () => {
+            it("can compute the spot price", async () => {
+                const price = await future.getPrice()
+                expect(price).to.be.eq(utils.parseUnits("2535.045886", 6))
+            })
+        });
     })
 })

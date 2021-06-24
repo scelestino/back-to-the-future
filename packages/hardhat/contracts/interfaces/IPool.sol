@@ -5,7 +5,7 @@ pragma abicoder v2;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 interface IPool {
-    function token() external returns (ERC20);
+    function token() view external returns (ERC20);
 
     function borrow(uint amount, address recipient) external;
 

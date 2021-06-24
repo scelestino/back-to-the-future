@@ -82,4 +82,13 @@ contract Future is IUniswapV3SwapCallback {
         amountOut = uint256(- (zeroForOne ? amount1 : amount0));
         require(amountOut >= price, 'Too little received');
     }
+
+    function getPrice() external view returns (uint256 price)
+    {
+        (uint160 sqrtPriceX96,,,,,,) =  pool.slot0();
+        price = uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
+//        if(address(quote.token()) == poolKey.token0) {
+//            price = uint(1e18).div(price);
+//        }
+    }
 }

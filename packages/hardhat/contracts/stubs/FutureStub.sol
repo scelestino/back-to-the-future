@@ -4,31 +4,32 @@ pragma abicoder v2;
 
 import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import "../interfaces/IFuture.sol";
+import "../interfaces/IPool.sol";
 
 contract FutureStub is IFuture {
     using LowGasSafeMath for int256;
 
-    address public override base;
-    address public override quote;
-    uint public override expiry;
+    IPool public override base;
+    IPool public override quote;
+//    uint public override expiry;
 
     int rate = 1;
 
-    constructor(address _base, address _quote, uint _expiry) {
+    constructor(IPool _base, IPool _quote, uint _expiry) {
         base = _base;
         quote = _quote;
-        expiry = _expiry;
+//        expiry = _expiry;
     }     
 
     function setRate(int _rate) external {
         rate = _rate;
     }
 
-    function long(int quantity, uint price) override external returns (int) {
-        return -quantity * rate;
+    function long(int quantity, uint price) external override returns (int amountReceived, int amountPaid) {
+        return (quantity, -quantity * rate);
     }
 
-    function short(int quantity, uint price) override external returns (int) {
-        return -quantity * rate;
+    function short(int quantity, uint price) external override returns (int amountPaid, int amountReceived) {
+        return (quantity, -quantity * rate);
     }
 }

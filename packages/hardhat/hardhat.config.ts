@@ -1,5 +1,6 @@
 import {HardhatUserConfig} from "hardhat/types";
 import {config as dotEnvConfig} from "dotenv";
+import 'hardhat-watcher';
 
 // const { utils } = require("ethers");
 const fs = require("fs");
@@ -137,6 +138,18 @@ const config: HardhatUserConfig = {
     },
     mocha: {
         timeout: 120000
+    },
+    watcher: {
+      test: {
+        tasks: [{ command: 'test' }],
+        files: ['./test/**/*'],
+        verbose: true,
+      },
+      compilation: {
+        tasks: ["compile"],
+        files: ['./contracts'],
+        verbose: true
+      }
     }
     // etherscan: {
     //   // Your API key for Etherscan

@@ -187,7 +187,7 @@ describe("User Accounts", async () => {
         [[parseUnits("2"), parseUnits("-5000")],
             [parseUnits("-2"), parseUnits("5000")]].forEach(([quantity, cost]) => {
 
-            it(`should only accept placing orders if the available margin is enough qty=${quantity}`, async () => {
+            it(`should only accept placing orders if the purchasing power is enough qty=${quantity}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
                 await traderAccount.deposit(lusd.address, parseUnits("2000"));
                 const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
@@ -229,7 +229,7 @@ describe("User Accounts", async () => {
 
                 // Fails as the total margin required is (2+2+2) * 2500 / 5 = 3000
                 return expect(traderAccount.placeOrder(future.address, quantity, price, 5))
-                    .to.be.eventually.rejectedWith(Error, "UserAccount: not enough available margin")
+                    .to.be.eventually.rejectedWith(Error, "UserAccount: not enough purchasing power")
             })
         });
 

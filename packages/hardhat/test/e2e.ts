@@ -153,11 +153,13 @@ describe("E2E", async () => {
                     expect(position.margin).to.be.eq(usedMargin)
                     expect(pp).to.be.eq(purchasingPower)
 
-                    // 2000 - 1014.525633 = 985.474367
                     expect(await traderAccount.purchasingPower(trader1.address, usdt.address)).to.be.eq(purchasingPower)
 
                     expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(initialUsdtHoldings.add(expectedCost))
                     expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+
+                    return expect(traderAccount.placeOrder(future.address, quantity, futurePrice, 5))
+                        .to.be.eventually.rejectedWith(Error, "UserAccount: not enough purchasing power")
                 })
             });
     })

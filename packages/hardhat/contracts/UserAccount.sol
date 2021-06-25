@@ -87,7 +87,7 @@ contract UserAccount {
 
         if (abs(position.quantity + _quantity) > abs(position.quantity)) {
             uint256 requiredMargin = FullMath.mulDivRoundingUp(abs(_quantity), price, leverage * WAD);
-            require(int(requiredMargin) <= purchasingPower, "UserAccount: not enough available margin");
+            require(int(requiredMargin) <= purchasingPower, "UserAccount: not enough purchasing power");
         }
 
         (int quantity, int cost) = _quantity > 0

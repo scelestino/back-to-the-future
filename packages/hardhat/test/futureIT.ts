@@ -92,6 +92,14 @@ describe("Futures", async () => {
             expect(future.address).to.properAddress
         })
 
+        describe("Futures can be priced", async () => {
+            it("can compute the spot price", async () => {
+                expect(await future.ask()).to.be.eq(utils.parseUnits("0.000408312720553566"))
+                expect(await future.spot()).to.be.eq(utils.parseUnits("0.000395460262037353"))
+                expect(await future.bid()).to.be.eq(utils.parseUnits("0.000386957866403550"))
+            })
+        });
+
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
                 const initialDaiHoldings = await dai.balanceOf(daiPool.address);
@@ -119,13 +127,6 @@ describe("Futures", async () => {
                 expect(await dai.balanceOf(daiPool.address)).to.be.gt(initialDaiHoldings)
             })
         })
-
-        describe("Futures can be priced", async () => {
-            it("can compute the spot price", async () => {
-                const price = await future.getPrice()
-                expect(price).to.be.eq(utils.parseUnits("0.000395460253974251"))
-            })
-        });
     })
 
     describe("Future base/quote, pair base/quote", async () => {
@@ -191,6 +192,14 @@ describe("Futures", async () => {
             expect(future.address).to.properAddress
         })
 
+        describe("Futures can be priced", async () => {
+            it("can compute the spot price", async () => {
+                expect(await future.ask()).to.be.eq(utils.parseUnits("2617.434546", 6))
+                expect(await future.spot()).to.be.eq(utils.parseUnits("2535.045566", 6))
+                expect(await future.bid()).to.be.eq(utils.parseUnits("2480.542087", 6))
+            })
+        });
+
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
                 const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
@@ -218,12 +227,5 @@ describe("Futures", async () => {
                 expect(await usdt.balanceOf(usdtPool.address)).to.be.gt(initialUsdtHoldings)
             })
         })
-
-        describe("Futures can be priced", async () => {
-            it("can compute the spot price", async () => {
-                const price = await future.getPrice()
-                expect(price).to.be.eq(utils.parseUnits("2535.045886", 6))
-            })
-        });
     })
 })

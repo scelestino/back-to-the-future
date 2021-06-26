@@ -79,14 +79,7 @@ contract UserAccount {
 
         (int quantity, int cost) = _quantity > 0 ? future.long(_quantity, price) : future.short(_quantity, price);
 
-        fills[msg.sender].push(
-            Fill({
-        future : future,
-        cost : cost,
-        leverage : leverage,
-        quantity : quantity
-        })
-        );
+        fills[msg.sender].push(Fill({future : future, cost : cost, leverage : leverage, quantity : quantity}));
 
         position.quantity += quantity;
         position.cost += cost;

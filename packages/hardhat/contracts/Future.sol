@@ -4,9 +4,9 @@ pragma abicoder v2;
 
 import "hardhat/console.sol";
 
-import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
 import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
 import '@uniswap/v3-core/contracts/libraries/SqrtPriceMath.sol';
+import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 
 import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
@@ -19,23 +19,17 @@ import "./interfaces/IPool.sol";
 
 contract Future is IFuture, IUniswapV3SwapCallback {
     using SafeMath for uint256;
-    using SafeCast for uint256;
 
     IPool immutable public override base;
     IPool immutable public override quote;
     IUniswapV3Pool immutable pool;
     PoolAddress.PoolKey poolKey;
-    uint borrowingRate = 0;
 
     constructor(IPool _base, IPool _quote, uint24 _fee, address _factory) {
         base = _base;
         quote = _quote;
         poolKey = PoolAddress.getPoolKey(address(_base.token()), address(_quote.token()), _fee);
         pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
-    }
-
-    function setBorrowingRate(uint _borrowingRate) external {
-        borrowingRate = _borrowingRate;
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external override {
@@ -76,7 +70,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         (int256 amount0, int256 amount1) = pool.swap(
             address(quote),
             zeroForOne,
-            -quantity,
+            - quantity,
             (zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1),
             abi.encode("")
         );
@@ -86,12 +80,21 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         //        require(amountReceived >= price.mul(quantity), 'Too little received');
     }
 
-    function getPrice() external view returns (uint256 price)
-    {
+    function spot() public view returns (uint256) {
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-        price = uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
-        //        if(address(quote.token()) == poolKey.token0) {
-        //            price = uint(1e18).div(price);
-        //        }
+        return uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
+        //TODO handle inverted pairs
+    }
+
+    function bid() external view returns (uint256 bidRate) {
+        bidRate = spot();
+        //TODO hardcoded to 2.15%, should come from the pricing formula using the pool rates
+        bidRate = bidRate - FullMath.mulDiv(215, bidRate, 10000);
+    }
+
+    function ask() external view returns (uint256 askRate) {
+        askRate = spot();
+        //TODO hardcoded to 3.25%, should come from the pricing formula using the pool rates
+        askRate = askRate + FullMath.mulDiv(325, askRate, 10000);
     }
 }

@@ -134,7 +134,7 @@ describe("E2E", async () => {
                     let amount = parseUnits("2000", 6);
                     await traderAccount.deposit(usdt.address, amount);
 
-                    const futurePrice = await future.getPrice()
+                    const futurePrice = await future.spot()
                     expect(futurePrice).to.be.eq(parseUnits("2534.406367", 6))
 
                     await traderAccount.placeOrder(future.address, quantity, futurePrice, 5)

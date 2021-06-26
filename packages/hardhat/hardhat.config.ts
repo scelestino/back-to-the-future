@@ -141,9 +141,9 @@ const config: HardhatUserConfig = {
     },
     watcher: {
       test: {
-        tasks: [{ command: 'test' }],
-        files: ['./test/**/*'],
-        verbose: true,
+          tasks: [{command: 'test'}],
+          files: ['./test/**/*', './contracts'],
+          verbose: true,
       },
       compilation: {
         tasks: ["compile"],

@@ -18,6 +18,8 @@ contract UserAccount {
 
     mapping(address => mapping(address => int256)) wallets;
     mapping(address => Fill[]) public fills;
+    //TODO replace second address by deterministic key similar to UNI pool address
+    mapping(address => mapping(address => Position)) positions;
 
     function deposit(address token, int256 amount) external {
         require(token != address(0), "UserAccount: token is the zero address");
@@ -45,25 +47,9 @@ contract UserAccount {
         return wallets[trader][token];
     }
 
-    function position(address trader, IFuture future) public view returns (Position memory p, int purchasingPower)
+    function position(address trader, address future) public view returns (Position memory)
     {
-        p = Position(future, 0, 0, 0);
-        Fill[] memory traderFills = fills[trader];
-        int256 positionMargin;
-        int256 totalMargin;
-        for (uint256 i = 0; i < traderFills.length; i++) {
-            Fill memory fill = traderFills[i];
-            if (fill.future == future) {
-                p.cost += fill.cost;
-                p.quantity += fill.quantity;
-                positionMargin += fill.cost / fill.leverage;
-            }
-            if (address(fill.future.quote().token()) == address(future.quote().token())) {
-                totalMargin += fill.cost / fill.leverage;
-            }
-        }
-        p.margin = abs(positionMargin);
-        purchasingPower = wallet(trader, address(future.quote().token())).sub(int(abs(totalMargin)));
+        return positions[trader][future];
     }
 
     function purchasingPower(address trader, address token) public view returns (int pp) {
@@ -72,6 +58,7 @@ contract UserAccount {
         for (uint256 i = 0; i < traderFills.length; i++) {
             Fill memory fill = traderFills[i];
             if (address(fill.future.quote().token()) == token) {
+                //TODO make it mark to market
                 margin += fill.cost / fill.leverage;
             }
         }
@@ -83,25 +70,27 @@ contract UserAccount {
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 
-        (Position memory position, int purchasingPower) = position(msg.sender, future);
+        Position memory position = positions[msg.sender][address(future)];
 
         if (abs(position.quantity + _quantity) > abs(position.quantity)) {
             uint256 requiredMargin = FullMath.mulDivRoundingUp(abs(_quantity), price, leverage * WAD);
-            require(int(requiredMargin) <= purchasingPower, "UserAccount: not enough purchasing power");
+            require(int(requiredMargin) <= purchasingPower(msg.sender, address(future.quote().token())), "UserAccount: not enough purchasing power");
         }
 
-        (int quantity, int cost) = _quantity > 0
-            ? future.long(_quantity, price)
-            : future.short(_quantity, price);
+        (int quantity, int cost) = _quantity > 0 ? future.long(_quantity, price) : future.short(_quantity, price);
 
         fills[msg.sender].push(
             Fill({
-                future: future,
-                cost: cost,
-                leverage: leverage,
-                quantity: quantity
-            })
+        future : future,
+        cost : cost,
+        leverage : leverage,
+        quantity : quantity
+        })
         );
+
+        position.quantity += quantity;
+        position.cost += cost;
+        positions[msg.sender][address(future)] = position;
     }
 
     function abs(int256 x) internal pure returns (uint256) {
@@ -116,9 +105,7 @@ contract UserAccount {
     }
 
     struct Position {
-        IFuture future;
         int256 cost;
-        uint256 margin;
         int256 quantity;
     }
 }

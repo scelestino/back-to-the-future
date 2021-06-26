@@ -204,12 +204,10 @@ describe("User Accounts", async () => {
                 expect(fill.quantity).to.be.eq(quantity)
                 expect(fill.cost).to.be.eq(cost)
 
-                const [position] = await traderAccount.position(trader1.address, future.address);
+                const position = await traderAccount.position(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(quantity)
                 expect(position.cost).to.be.eq(cost)
-                expect(position.future).to.be.eq(future.address)
                 // Used margin so far 2 * 2500 / 5 = 1000
-                expect(position.margin).to.be.eq(parseUnits("1000"))
 
                 await traderAccount.placeOrder(future.address, quantity, price, 5)
 
@@ -220,12 +218,10 @@ describe("User Accounts", async () => {
                 expect(fill.quantity).to.be.eq(quantity)
                 expect(fill.cost).to.be.eq(cost)
 
-                const [position2] = await traderAccount.position(trader1.address, future.address);
+                const position2 = await traderAccount.position(trader1.address, future.address);
                 expect(position2.quantity).to.be.eq(quantity.mul(2))
                 expect(position2.cost).to.be.eq(cost.mul(2))
-                expect(position2.future).to.be.eq(future.address)
                 // Used margin so far (2+2) * 2500 / 5 = 2000
-                expect(position2.margin).to.be.eq(parseUnits("2000"))
 
                 // Fails as the total margin required is (2+2+2) * 2500 / 5 = 3000
                 return expect(traderAccount.placeOrder(future.address, quantity, price, 5))
@@ -253,12 +249,10 @@ describe("User Accounts", async () => {
                 expect(fill.quantity).to.be.eq(quantity)
                 expect(fill.cost).to.be.eq(cost)
 
-                const [position] = await traderAccount.position(trader1.address, future.address);
+                const position = await traderAccount.position(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(quantity)
                 expect(position.cost).to.be.eq(cost)
-                expect(position.future).to.be.eq(future.address)
                 // Used margin so far 2 * 2500 / 5 = 1000
-                expect(position.margin).to.be.eq(parseUnits("1000"))
 
                 await traderAccount.placeOrder(future.address, quantity2, price, 5)
 
@@ -269,12 +263,10 @@ describe("User Accounts", async () => {
                 expect(fill.quantity).to.be.eq(quantity2)
                 expect(fill.cost).to.be.eq(cost2)
 
-                const [position2] = await traderAccount.position(trader1.address, future.address);
+                const position2 = await traderAccount.position(trader1.address, future.address);
                 expect(position2.quantity).to.be.eq(quantity.div(2))
                 expect(position2.cost).to.be.eq(cost.add(cost2))
-                expect(position2.future).to.be.eq(future.address)
                 // Used margin so far 1 * 2500 / 5 = 500
-                expect(position2.margin).to.be.eq(parseUnits("500"))
             })
         });
     })

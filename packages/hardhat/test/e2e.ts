@@ -146,12 +146,9 @@ describe("E2E", async () => {
                     expect(fill.quantity).to.be.eq(quantity)
                     expect(fill.cost).to.be.eq(expectedCost)
 
-                    const [position, pp] = await traderAccount.position(trader1.address, future.address);
+                    const position = await traderAccount.position(trader1.address, future.address);
                     expect(position.quantity).to.be.eq(quantity)
                     expect(position.cost).to.be.eq(expectedCost)
-                    expect(position.future).to.be.eq(future.address)
-                    expect(position.margin).to.be.eq(usedMargin)
-                    expect(pp).to.be.eq(purchasingPower)
 
                     expect(await traderAccount.purchasingPower(trader1.address, usdt.address)).to.be.eq(purchasingPower)
 

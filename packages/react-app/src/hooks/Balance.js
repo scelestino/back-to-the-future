@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import useOnBlock from "./OnBlock";
 import usePoller from "./Poller";
 
@@ -23,17 +23,12 @@ const DEBUG = false;
 export default function useBalance(provider, address, pollTime = 0) {
   const [balance, setBalance] = useState();
 
-  const pollBalance = useCallback(
-    async (provider, address) => {
+  const pollBalance = async (provider, address) => {
       if (provider && address) {
         const newBalance = await provider.getBalance(address);
-        if (newBalance !== balance) {
-          setBalance(newBalance);
-        }
+        setBalance(prevBalance => newBalance !== prevBalance ? newBalance : prevBalance);
       }
-    },
-    [provider, address],
-  );
+    }
 
   // Only pass a provider to watch on a block if there is no pollTime
   useOnBlock(pollTime === 0 && provider, () => {

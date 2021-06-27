@@ -19,7 +19,7 @@ import {
 } from "antd";
 import { useBlockNumber, usePoller } from "eth-hooks";
 import { ethers } from "ethers";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "../hooks";
 
 const { Option } = Select;
@@ -121,9 +121,9 @@ function Swap({ selectedProvider, tokenListURI }) {
       }
     };
     getTokenList();
-  }, [tokenListURI]);
+  }, [_tokenListUri, activeChainId]);
 
-  const getTrades = async () => {
+  const getTrades = useCallback(async () => {
     if (tokenIn && tokenOut && (amountIn || amountOut)) {
       const pairs = arr => arr.map((v, i) => arr.slice(i + 1).map(w => [v, w])).flat();
 
@@ -178,11 +178,11 @@ function Swap({ selectedProvider, tokenListURI }) {
 
       console.log(bestTrade);
     }
-  };
+  }, [amountIn, amountOut, exact, selectedProvider, tokenIn, tokenList, tokenOut, tokens])
 
   useEffect(() => {
     getTrades();
-  }, [tokenIn, tokenOut, debouncedAmountIn, debouncedAmountOut, slippageTolerance, selectedProvider]);
+  }, [tokenIn, tokenOut, debouncedAmountIn, debouncedAmountOut, slippageTolerance, selectedProvider, getTrades]);
 
   useEffect(() => {
     if (trades && trades[0]) {
@@ -192,7 +192,7 @@ function Swap({ selectedProvider, tokenListURI }) {
         setAmountInMax(trades[0].maximumAmountIn(slippageTolerance));
       }
     }
-  }, [slippageTolerance, amountIn, amountOut, trades]);
+  }, [slippageTolerance, amountIn, amountOut, trades, exact]);
 
   const getBalance = async (_token, _account, _contract) => {
     let newBalance;

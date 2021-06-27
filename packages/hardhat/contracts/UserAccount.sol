@@ -58,8 +58,10 @@ contract UserAccount {
         for (uint256 i = 0; i < traderFills.length; i++) {
             Fill memory fill = traderFills[i];
             if (address(fill.future.quote().token()) == token) {
-                //TODO make it mark to market
-                margin += fill.cost / fill.leverage;
+                //consider the rate that it'd paid to close the fill, aka the other side of the market
+                int marketRate = int(fill.quantity > 0 ? fill.future.bid() : fill.future.ask());
+                // TODO how safe are this math operations?
+                margin += fill.quantity * marketRate / (fill.leverage * int(10 ** fill.future.base().token().decimals()));
             }
         }
         pp = wallet(trader, token).sub(int(abs(margin)));
@@ -70,7 +72,7 @@ contract UserAccount {
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 
-        Position memory position = positions[msg.sender][address(future)];
+        Position storage position = positions[msg.sender][address(future)];
 
         if (abs(position.quantity + _quantity) > abs(position.quantity)) {
             uint256 requiredMargin = FullMath.mulDivRoundingUp(abs(_quantity), price, leverage * WAD);
@@ -83,7 +85,6 @@ contract UserAccount {
 
         position.quantity += quantity;
         position.cost += cost;
-        positions[msg.sender][address(future)] = position;
     }
 
     function abs(int256 x) internal pure returns (uint256) {

@@ -122,22 +122,28 @@ describe("E2E", async () => {
 
     describe("Users can trade", async () => {
 
-        [[parseUnits("2"), parseUnits("-5072.628169", 6), parseUnits("1014.525633", 6), parseUnits("985.474367", 6)],
-            [parseUnits("-2"), parseUnits("5065.001132", 6), parseUnits("1013.000226", 6), parseUnits("986.999774", 6)]]
-            .forEach(([quantity, expectedCost, usedMargin, purchasingPower]) => {
-                it(`trader goes ${quantity.gt(0) ? "long" : "short"}`, async () => {
+        [
+            [parseEther("2"), parseUnits("-5072.628169", 6), parseUnits("1007.532638", 6)],
+            [parseEther("-2"), parseUnits("5065.001132", 6), parseUnits("953.817850", 6)]
+        ]
+            .forEach(([quantity, expectedCost, purchasingPower]) => {
+                const isLong = quantity.gt(0);
+                it(`trader goes ${isLong ? "long" : "short"}`, async () => {
                     const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
                     const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
                     const traderAccount = userAccount.connect(trader1)
                     await usdt.connect(trader1).approve(traderAccount.address, constants.MaxUint256)
-                    let amount = parseUnits("2000", 6);
-                    await traderAccount.deposit(usdt.address, amount);
+                    const deposit = parseUnits("2000", 6);
+                    await traderAccount.deposit(usdt.address, deposit);
 
-                    const futurePrice = await future.spot()
-                    expect(futurePrice).to.be.eq(parseUnits("2534.406367", 6))
+                    const futurePrice = await (isLong ? future.ask() : future.bid())
+                    const expectedFuturePrice = isLong ? parseUnits("2616.774573", 6) : parseUnits("2479.916631", 6)
+                    expect(futurePrice).to.be.eq(expectedFuturePrice)
 
+                    expect(await traderAccount.purchasingPower(trader1.address, usdt.address)).to.be.eq(deposit)
                     await traderAccount.placeOrder(future.address, quantity, futurePrice, 5)
+                    expect(await traderAccount.purchasingPower(trader1.address, usdt.address)).to.be.eq(purchasingPower)
 
                     expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                     const fill = await traderAccount.fills(trader1.address, 0);
@@ -150,12 +156,14 @@ describe("E2E", async () => {
                     expect(position.quantity).to.be.eq(quantity)
                     expect(position.cost).to.be.eq(expectedCost)
 
-                    expect(await traderAccount.purchasingPower(trader1.address, usdt.address)).to.be.eq(purchasingPower)
-
                     expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(initialUsdtHoldings.add(expectedCost))
                     expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
 
-                    return expect(traderAccount.placeOrder(future.address, quantity, futurePrice, 5))
+                    const futurePrice2 = await (isLong ? future.ask() : future.bid())
+                    const expectedFuturePrice2 = isLong ? parseUnits("2618.095430", 6) : parseUnits("2478.666427", 6)
+                    expect(futurePrice2).to.be.eq(expectedFuturePrice2)
+
+                    return expect(traderAccount.placeOrder(future.address, quantity, futurePrice2, 5))
                         .to.be.eventually.rejectedWith(Error, "UserAccount: not enough purchasing power")
                 })
             });

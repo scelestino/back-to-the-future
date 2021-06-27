@@ -86,13 +86,13 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         //TODO handle inverted pairs
     }
 
-    function bid() external view returns (uint256 bidRate) {
+    function bid() external override view returns (uint256 bidRate) {
         bidRate = spot();
         //TODO hardcoded to 2.15%, should come from the pricing formula using the pool rates
         bidRate = bidRate - FullMath.mulDiv(215, bidRate, 10000);
     }
 
-    function ask() external view returns (uint256 askRate) {
+    function ask() external override view returns (uint256 askRate) {
         askRate = spot();
         //TODO hardcoded to 3.25%, should come from the pricing formula using the pool rates
         askRate = askRate + FullMath.mulDiv(325, askRate, 10000);

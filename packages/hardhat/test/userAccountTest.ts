@@ -17,7 +17,7 @@ import fc from 'fast-check';
 
 chai.use(solidity).use(chaiAsPromised)
 const {expect} = chai
-const {parseUnits} = utils
+const {parseUnits, parseEther} = utils
 
 describe("User Accounts", async () => {
 
@@ -184,8 +184,8 @@ describe("User Accounts", async () => {
         expiry.setMonth(expiry.getMonth() + 3);
         const price = parseUnits("2500");
 
-        [[parseUnits("2"), parseUnits("-5000")],
-            [parseUnits("-2"), parseUnits("5000")]].forEach(([quantity, cost]) => {
+        [[parseEther("2"), parseUnits("-5000")],
+            [parseEther("-2"), parseUnits("5000")]].forEach(([quantity, cost]) => {
 
             it(`should only accept placing orders if the purchasing power is enough qty=${quantity}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
@@ -193,7 +193,7 @@ describe("User Accounts", async () => {
                 const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
                 await future.deployed()
                 expect(future.address).to.properAddress
-                await future.setRate(2500)
+                await future.setSpot(price)
 
                 await traderAccount.placeOrder(future.address, quantity, price, 5)
 
@@ -208,6 +208,7 @@ describe("User Accounts", async () => {
                 expect(position.quantity).to.be.eq(quantity)
                 expect(position.cost).to.be.eq(cost)
                 // Used margin so far 2 * 2500 / 5 = 1000
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(parseUnits("1000"))
 
                 await traderAccount.placeOrder(future.address, quantity, price, 5)
 
@@ -222,6 +223,7 @@ describe("User Accounts", async () => {
                 expect(position2.quantity).to.be.eq(quantity.mul(2))
                 expect(position2.cost).to.be.eq(cost.mul(2))
                 // Used margin so far (2+2) * 2500 / 5 = 2000
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(0)
 
                 // Fails as the total margin required is (2+2+2) * 2500 / 5 = 3000
                 return expect(traderAccount.placeOrder(future.address, quantity, price, 5))
@@ -229,8 +231,8 @@ describe("User Accounts", async () => {
             })
         });
 
-        [[parseUnits("2"), parseUnits("-5000"), parseUnits("-1"), parseUnits("2500")],
-            [parseUnits("-2"), parseUnits("5000"), parseUnits("1"), parseUnits("-2500")]].forEach(([quantity, cost, quantity2, cost2]) => {
+        [[parseEther("2"), parseUnits("-5000"), parseUnits("-1"), parseUnits("2500")],
+            [parseEther("-2"), parseUnits("5000"), parseUnits("1"), parseUnits("-2500")]].forEach(([quantity, cost, quantity2, cost2]) => {
 
             it(`should allow opposite orders if they'll reduce an existing position qty=${quantity}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
@@ -238,7 +240,7 @@ describe("User Accounts", async () => {
                 const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
                 await future.deployed()
                 expect(future.address).to.properAddress
-                await future.setRate(2500)
+                await future.setSpot(price)
 
                 await traderAccount.placeOrder(future.address, quantity, price, 5)
 
@@ -253,6 +255,7 @@ describe("User Accounts", async () => {
                 expect(position.quantity).to.be.eq(quantity)
                 expect(position.cost).to.be.eq(cost)
                 // Used margin so far 2 * 2500 / 5 = 1000
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(0)
 
                 await traderAccount.placeOrder(future.address, quantity2, price, 5)
 
@@ -267,6 +270,26 @@ describe("User Accounts", async () => {
                 expect(position2.quantity).to.be.eq(quantity.div(2))
                 expect(position2.cost).to.be.eq(cost.add(cost2))
                 // Used margin so far 1 * 2500 / 5 = 500
+            })
+        });
+
+        [[parseUnits("2"), parseUnits("1040")],
+            [parseUnits("-2"), parseUnits("960")]].forEach(([quantity, purchasingPower]) => {
+
+            it(`should use mark to market to calculate purchasing power qty=${quantity}`, async () => {
+                const traderAccount = userAccount.connect(trader1)
+                const deposit = parseUnits("2000");
+                await traderAccount.deposit(lusd.address, deposit);
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                await future.deployed()
+                expect(future.address).to.properAddress
+                await future.setBidRate(parseUnits("2400"))
+                await future.setSpot(parseUnits("2500"))
+                await future.setAskRate(parseUnits("2600"))
+
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(deposit)
+                await traderAccount.placeOrder(future.address, quantity, price, 5)
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
             })
         });
     })

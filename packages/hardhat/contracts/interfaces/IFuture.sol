@@ -6,9 +6,15 @@ import "./IPool.sol";
 
 interface IFuture {
     function base() external view returns (IPool);
+
     function quote() external view returns (IPool);
-//    function expiry() external returns (uint);
+    //    function expiry() external returns (uint);
 
     function long(int quantity, uint price) external returns (int amountReceived, int amountPaid);
+
     function short(int quantity, uint price) external returns (int amountPaid, int amountReceived);
+
+    function bid() external view returns (uint256 bidRate);
+
+    function ask() external view returns (uint256 askRate);
 }

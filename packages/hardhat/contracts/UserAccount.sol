@@ -134,10 +134,6 @@ contract UserAccount {
         return uint(x >= 0 ? x : - x);
     }
 
-    function min(uint x, uint y) internal pure returns (uint) {
-        return x <= y ? x : y;
-    }
-
     function signum(int x) internal pure returns (int) {
         return x >= 0 ? int(1) : - 1;
     }

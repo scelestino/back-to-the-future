@@ -2181,6 +2181,16 @@
   dependencies:
     body-scroll-lock "^2.6.4"
 
+"@react-rxjs/core@^0.8.2":
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/@react-rxjs/core/-/core-0.8.2.tgz#bbb47c2172383f289a3bef75b9df7c5cb4f7e46f"
+  integrity sha512-rnppDm3NwkKkw72UZ6aoR5pto0CdLrM0m11CvbLYo6yqEAJfywgk8pj3YOT+GaEms9AFf9Q9ZB+9gbBhkKe3hg==
+
+"@react-rxjs/utils@^0.9.1":
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/@react-rxjs/utils/-/utils-0.9.1.tgz#c9f87d39359145a0becc63c144e4753ec4f5341d"
+  integrity sha512-uvxoqI9HEew60j/CFCTsJWvtDuQRHpKkcBQwSIWo37xLNE4zo1wRUIj8rrFNpUOaG4969bO6GK6+RuIbaDAeQg==
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -17928,6 +17938,13 @@ rxjs@^6.4.0, rxjs@^6.5.3, rxjs@^6.6.0, rxjs@^6.6.3:
   dependencies:
     tslib "^1.9.0"
 
+rxjs@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.1.0.tgz#94202d27b19305ef7b1a4f330277b2065df7039e"
+  integrity sha512-gCFO5iHIbRPwznl6hAYuwNFld8W4S2shtSJIqG27ReWXo9IWrCyEICxUA+6vJHwSR/OakoenC4QsDxq50tzYmw==
+  dependencies:
+    tslib "~2.1.0"
+
 s3-folder-upload@^2.3.1:
   version "2.3.5"
   resolved "https://registry.yarnpkg.com/s3-folder-upload/-/s3-folder-upload-2.3.5.tgz#c4149c2427cec49e7fe49bd8e87e01b60e8bddbe"
@@ -19683,6 +19700,11 @@ tslib@^2.0.0, tslib@^2.0.3, tslib@^2.1.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.3.0.tgz#803b8cdab3e12ba581a4ca41c8839bbb0dacb09e"
   integrity sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==
+
+tslib@~2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.1.0.tgz#da60860f1c2ecaa5703ab7d39bc05b6bf988b97a"
+  integrity sha512-hcVC3wYEziELGGmEEXue7D75zbwIIVUMWAVbHItGPx0ziyXxrOMQx4rQEVEV45Ut/1IotuEvwqPopzIOkDMf0A==
 
 tsort@0.0.1:
   version "0.0.1"

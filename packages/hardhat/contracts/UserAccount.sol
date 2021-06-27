@@ -14,8 +14,6 @@ contract UserAccount {
     using LowGasSafeMath for int256;
     using SafeERC20 for IERC20;
 
-    uint256 constant WAD = 10 ** 18;
-
     mapping(address => mapping(address => int256)) wallets;
     mapping(address => Fill[]) public fills;
     //TODO replace second address by deterministic key similar to UNI pool address
@@ -61,7 +59,7 @@ contract UserAccount {
                 //consider the rate that it'd paid to close the fill, aka the other side of the market
                 int marketRate = int(fill.quantity > 0 ? fill.future.bid() : fill.future.ask());
                 // TODO how safe are this math operations?
-                margin += fill.quantity * marketRate / (fill.leverage * int(10 ** fill.future.base().token().decimals()));
+                margin += fill.quantity * marketRate / (fill.leverage * int(fill.future.base().tokenWAD()));
             }
         }
         pp = wallet(trader, token).sub(int(abs(margin)));
@@ -75,7 +73,7 @@ contract UserAccount {
         Position storage position = positions[msg.sender][address(future)];
 
         if (abs(position.quantity + _quantity) > abs(position.quantity)) {
-            uint256 requiredMargin = FullMath.mulDivRoundingUp(abs(_quantity), price, leverage * WAD);
+            uint256 requiredMargin = FullMath.mulDivRoundingUp(abs(_quantity), price, leverage * future.base().tokenWAD());
             require(int(requiredMargin) <= purchasingPower(msg.sender, address(future.quote().token())), "UserAccount: not enough purchasing power");
         }
 

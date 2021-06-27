@@ -9,9 +9,11 @@ import "../interfaces/IPool.sol";
 contract PoolStub is IPool {
 
     ERC20 public override token;
+    uint public override tokenWAD;
 
     constructor(ERC20 _token) {
         token = _token;
+        tokenWAD = 10 ** _token.decimals();
     }
 
     function borrow(uint amount, address recipient) external override {

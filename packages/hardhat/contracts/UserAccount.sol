@@ -66,6 +66,8 @@ contract UserAccount {
     }
 
     function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage) external {
+        uint marketPrice = _quantity > 0 ? future.ask() : future.bid();
+        require(price >= marketPrice, "UserAccount: invalid price");
         require(_quantity != 0, "UserAccount: can't open a position with 0 amount");
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");

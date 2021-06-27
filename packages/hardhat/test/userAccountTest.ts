@@ -231,18 +231,25 @@ describe("User Accounts", async () => {
             })
         });
 
-        [[parseEther("2"), parseUnits("-5000"), parseUnits("-1"), parseUnits("2500")],
-            [parseEther("-2"), parseUnits("5000"), parseUnits("1"), parseUnits("-2500")]].forEach(([quantity, cost, quantity2, cost2]) => {
-
-            it(`should allow opposite orders if they'll reduce an existing position qty=${quantity}`, async () => {
+        [
+            [parseEther("2"), parseUnits("-5200"), parseUnits("140"), parseUnits("-1"), parseUnits("2400"), parseUnits("660")],
+            [parseEther("-2"), parseUnits("4800"), parseUnits("60"), parseUnits("1"), parseUnits("-2600"), parseUnits("540" +
+                "")]
+        ].forEach(([quantity, cost, purchasingPower, quantity2, cost2, purchasingPower2]) => {
+            it.only(`should allow opposite orders if they'll reduce an existing position qty=${quantity}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
-                await traderAccount.deposit(lusd.address, parseUnits("1000"));
+                const deposit = parseUnits("1100");
+                await traderAccount.deposit(lusd.address, deposit);
                 const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
                 await future.deployed()
                 expect(future.address).to.properAddress
-                await future.setSpot(price)
+                await future.setBidRate(parseUnits("2400"))
+                await future.setSpot(parseUnits("2500"))
+                await future.setAskRate(parseUnits("2600"))
 
-                await traderAccount.placeOrder(future.address, quantity, price, 5)
+                const traderPrice1 = await (quantity.gt(0) ? future.ask() : future.bid())
+                await traderAccount.placeOrder(future.address, quantity, traderPrice1, 5)
+                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                 let fill = await traderAccount.fills(trader1.address, 0);
@@ -254,22 +261,24 @@ describe("User Accounts", async () => {
                 const position = await traderAccount.position(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(quantity)
                 expect(position.cost).to.be.eq(cost)
-                // Used margin so far 2 * 2500 / 5 = 1000
-                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(0)
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
 
-                await traderAccount.placeOrder(future.address, quantity2, price, 5)
+                const traderPrice2 = await (quantity2.gt(0) ? future.ask() : future.bid())
+                await traderAccount.placeOrder(future.address, quantity2, traderPrice2, 5)
 
-                expect(await traderAccount.noFills(trader1.address)).to.be.eq(2);
-                fill = await traderAccount.fills(trader1.address, 1);
+                expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
+                fill = await traderAccount.fills(trader1.address, 0);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(quantity2)
+                expect(fill.quantity).to.be.eq(quantity.add(quantity2))
                 expect(fill.cost).to.be.eq(cost2)
 
                 const position2 = await traderAccount.position(trader1.address, future.address);
                 expect(position2.quantity).to.be.eq(quantity.div(2))
                 expect(position2.cost).to.be.eq(cost.add(cost2))
-                // Used margin so far 1 * 2500 / 5 = 500
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower2)
+
+                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
             })
         });
 

@@ -149,8 +149,8 @@ describe("E2E", async () => {
                     const fill = await traderAccount.fills(trader1.address, 0);
 
                     expect(fill.leverage).to.be.eq(5)
-                    expect(fill.quantity).to.be.eq(quantity)
-                    expect(fill.cost).to.be.eq(expectedCost)
+                    expect(fill.openQuantity).to.be.eq(quantity)
+                    expect(fill.openCost).to.be.eq(expectedCost)
 
                     const position = await traderAccount.position(trader1.address, future.address);
                     expect(position.quantity).to.be.eq(quantity)

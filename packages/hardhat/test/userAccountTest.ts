@@ -201,8 +201,8 @@ describe("User Accounts", async () => {
                 let fill = await traderAccount.fills(trader1.address, 0);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(quantity)
-                expect(fill.cost).to.be.eq(cost)
+                expect(fill.openQuantity).to.be.eq(quantity)
+                expect(fill.openCost).to.be.eq(cost)
 
                 const position = await traderAccount.position(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(quantity)
@@ -216,8 +216,8 @@ describe("User Accounts", async () => {
                 fill = await traderAccount.fills(trader1.address, 1);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(quantity)
-                expect(fill.cost).to.be.eq(cost)
+                expect(fill.openQuantity).to.be.eq(quantity)
+                expect(fill.openCost).to.be.eq(cost)
 
                 const position2 = await traderAccount.position(trader1.address, future.address);
                 expect(position2.quantity).to.be.eq(quantity.mul(2))
@@ -232,11 +232,10 @@ describe("User Accounts", async () => {
         });
 
         [
-            [parseEther("2"), parseUnits("-5200"), parseUnits("140"), parseUnits("-1"), parseUnits("2400"), parseUnits("660")],
-            [parseEther("-2"), parseUnits("4800"), parseUnits("60"), parseUnits("1"), parseUnits("-2600"), parseUnits("540" +
-                "")]
-        ].forEach(([quantity, cost, purchasingPower, quantity2, cost2, purchasingPower2]) => {
-            it.only(`should allow opposite orders if they'll reduce an existing position qty=${quantity}`, async () => {
+            [parseEther("2"), parseUnits("-5200"), parseUnits("140"), parseUnits("-1"), parseUnits("2400"), parseUnits("-2600"), parseUnits("420")],
+            [parseEther("-2"), parseUnits("4800"), parseUnits("60"), parseUnits("1"), parseUnits("-2600"), parseUnits("2400"), parseUnits("380")]
+        ].forEach(([openQty, openCost, purchasingPower, closeQty, closeCost, openCost2, purchasingPower2]) => {
+            it.only(`should allow opposite orders if they'll reduce an existing position qty=${openQty}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
                 const deposit = parseUnits("1100");
                 await traderAccount.deposit(lusd.address, deposit);
@@ -247,38 +246,43 @@ describe("User Accounts", async () => {
                 await future.setSpot(parseUnits("2500"))
                 await future.setAskRate(parseUnits("2600"))
 
-                const traderPrice1 = await (quantity.gt(0) ? future.ask() : future.bid())
-                await traderAccount.placeOrder(future.address, quantity, traderPrice1, 5)
+                let traderPrice = await (openQty.gt(0) ? future.ask() : future.bid())
+                await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
                 expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                 let fill = await traderAccount.fills(trader1.address, 0);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(quantity)
-                expect(fill.cost).to.be.eq(cost)
+                expect(fill.openQuantity).to.be.eq(openQty)
+                expect(fill.openCost).to.be.eq(openCost)
+                expect(fill.closeQuantity).to.be.eq(0)
+                expect(fill.closeCost).to.be.eq(0)
 
-                const position = await traderAccount.position(trader1.address, future.address);
-                expect(position.quantity).to.be.eq(quantity)
-                expect(position.cost).to.be.eq(cost)
+                let position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(openQty)
+                expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
 
-                const traderPrice2 = await (quantity2.gt(0) ? future.ask() : future.bid())
-                await traderAccount.placeOrder(future.address, quantity2, traderPrice2, 5)
+                traderPrice = await (closeQty.gt(0) ? future.ask() : future.bid())
+                await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                 fill = await traderAccount.fills(trader1.address, 0);
 
                 expect(fill.leverage).to.be.eq(5)
-                expect(fill.quantity).to.be.eq(quantity.add(quantity2))
-                expect(fill.cost).to.be.eq(cost2)
+                expect(fill.openQuantity).to.be.eq(openQty.add(closeQty))
+                expect(fill.openCost).to.be.eq(openCost2)
+                expect(fill.closeQuantity).to.be.eq(closeQty)
+                expect(fill.closeCost).to.be.eq(closeCost)
 
-                const position2 = await traderAccount.position(trader1.address, future.address);
-                expect(position2.quantity).to.be.eq(quantity.div(2))
-                expect(position2.cost).to.be.eq(cost.add(cost2))
+                position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(fill.openQuantity)
+                expect(position.cost).to.be.eq(fill.openCost)
+
+                //PnL == 200
+                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("900"))
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower2)
-
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
             })
         });
 

@@ -57,9 +57,9 @@ contract UserAccount {
             Fill memory fill = traderFills[i];
             if (address(fill.future.quote().token()) == token) {
                 //consider the rate that it'd paid to close the fill, aka the other side of the market
-                int marketRate = int(fill.quantity > 0 ? fill.future.bid() : fill.future.ask());
+                int marketRate = int(fill.openQuantity > 0 ? fill.future.bid() : fill.future.ask());
                 // TODO how safe are this math operations?
-                margin += fill.quantity * marketRate / (fill.leverage * int(fill.future.base().tokenWAD()));
+                margin += fill.openQuantity * marketRate / (fill.leverage * int(fill.future.base().tokenWAD()));
             }
         }
         pp = wallet(trader, token).sub(int(abs(margin)));
@@ -81,21 +81,63 @@ contract UserAccount {
 
         (int quantity, int cost) = _quantity > 0 ? future.long(_quantity, price) : future.short(_quantity, price);
 
-        fills[msg.sender].push(Fill({future : future, cost : cost, leverage : leverage, quantity : quantity}));
-
-        position.quantity += quantity;
-        position.cost += cost;
+        settle(future, position, Fill(future, quantity, cost, leverage, 0, 0));
     }
 
-    function abs(int256 x) internal pure returns (uint256) {
-        return uint256(x >= 0 ? x : - x);
+    function settle(IFuture future, Position storage position, Fill memory rightFill) internal {
+        Fill[] storage traderFills = fills[msg.sender];
+        for (uint i = 0; i < traderFills.length; i++) {
+            if (traderFills[i].future == future && signum(traderFills[i].openQuantity) != signum(rightFill.openQuantity)) {
+                // rightFill can close leftFill completely
+                if (abs(rightFill.openQuantity) >= abs(traderFills[i].openQuantity)) {
+
+
+                } else {
+                    // rightFill partially closes leftFill
+                    Fill storage leftFill = traderFills[i];
+                    int closeCost = signum(rightFill.openCost) * int(FullMath.mulDiv(abs(rightFill.openQuantity), abs(leftFill.openCost), abs(leftFill.openQuantity)));
+                    leftFill.openCost += closeCost;
+                    leftFill.openQuantity += rightFill.openQuantity;
+                    leftFill.closeCost += rightFill.openCost;
+                    leftFill.closeQuantity += rightFill.openQuantity;
+
+                    int pnl = rightFill.openCost - closeCost;
+
+                    wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())].add(pnl);
+                    // TODO what to do with the PnL???
+
+                    position.quantity += rightFill.openQuantity;
+                    position.cost += closeCost;
+                    return;
+                }
+            }
+        }
+        if (rightFill.openQuantity != 0) {
+            fills[msg.sender].push(rightFill);
+            position.quantity += rightFill.openQuantity;
+            position.cost += rightFill.openCost;
+        }
+    }
+
+    function abs(int x) internal pure returns (uint) {
+        return uint(x >= 0 ? x : - x);
+    }
+
+    function min(uint x, uint y) internal pure returns (uint) {
+        return x <= y ? x : y;
+    }
+
+    function signum(int x) internal pure returns (int) {
+        return x >= 0 ? int(1) : - 1;
     }
 
     struct Fill {
         IFuture future;
-        int256 cost;
+        int256 openQuantity;
+        int256 openCost;
         uint8 leverage;
-        int256 quantity;
+        int256 closeQuantity;
+        int256 closeCost;
     }
 
     struct Position {

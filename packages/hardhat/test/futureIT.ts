@@ -3,7 +3,7 @@ import chai from 'chai'
 import chaiAsPromised from "chai-as-promised"
 import {solidity} from "ethereum-waffle"
 import {constants, utils} from 'ethers'
-import {ethers} from 'hardhat'
+import {ethers, network} from 'hardhat'
 import {
     Future,
     Future__factory,
@@ -15,9 +15,13 @@ import {
     Pool__factory,
     TestSwapRouter__factory
 } from '../typechain'
+import {config as dotEnvConfig} from "dotenv";
 
 chai.use(solidity).use(chaiAsPromised)
 const {expect} = chai
+
+dotEnvConfig();
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
 
 const uniswapFactory = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
 const uniswapRouter = '0xE592427A0AEce92De3Edee1F18E0157C05861564'
@@ -37,6 +41,16 @@ describe("Futures", async () => {
         let wethPool: Pool;
 
         before(async () => {
+            await network.provider.request({
+                method: "hardhat_reset",
+                params: [{
+                    forking: {
+                        jsonRpcUrl: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+                        blockNumber: 12628614
+                    }
+                }]
+            })
+
             /* before tests */
             const signers = await ethers.getSigners()
             owner = signers[0]
@@ -78,6 +92,16 @@ describe("Futures", async () => {
             expect(future.address).to.properAddress
         })
 
+        describe("Futures can be priced", async () => {
+            it("can compute the spot price", async () => {
+                expect(await future.askQty()).to.be.eq(utils.parseUnits("9.575309008168353510"))
+                expect(await future.askRate()).to.be.eq(utils.parseUnits("2610.881798036323892886"))
+                expect(await future.spot()).to.be.eq(utils.parseUnits("2528.699078001282220713"))
+                expect(await future.bidQty()).to.be.eq(utils.parseUnits("10"))
+                expect(await future.bidRate()).to.be.eq(utils.parseUnits("2474.332047824254652968"))
+            })
+        });
+
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
                 const initialDaiHoldings = await dai.balanceOf(daiPool.address);
@@ -88,8 +112,8 @@ describe("Futures", async () => {
 
                 await future.long(quantity, price)
 
-                expect(await dai.balanceOf(daiPool.address)).to.be.lt(initialDaiHoldings)
                 expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                expect(await dai.balanceOf(daiPool.address)).to.be.lt(initialDaiHoldings)
             })
 
             it("can go short", async () => {
@@ -97,12 +121,12 @@ describe("Futures", async () => {
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
                 const price = utils.parseUnits("2525");
-                const quantity = utils.parseEther("1");
+                const quantity = utils.parseEther("-1");
 
                 await future.short(quantity, price)
 
+                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
                 expect(await dai.balanceOf(daiPool.address)).to.be.gt(initialDaiHoldings)
-                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.sub(quantity))
             })
         })
     })
@@ -119,6 +143,16 @@ describe("Futures", async () => {
         let wethPool: Pool;
 
         before(async () => {
+            await network.provider.request({
+                method: "hardhat_reset",
+                params: [{
+                    forking: {
+                        jsonRpcUrl: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+                        blockNumber: 12628614
+                    }
+                }]
+            })
+
             /* before tests */
             const signers = await ethers.getSigners()
             owner = signers[0]
@@ -160,6 +194,16 @@ describe("Futures", async () => {
             expect(future.address).to.properAddress
         })
 
+        describe("Futures can be priced", async () => {
+            it("can compute the spot price", async () => {
+                expect(await future.askQty()).to.be.eq(utils.parseUnits("9.551337219952777378"))
+                expect(await future.askRate()).to.be.eq(utils.parseUnits("2617.434546", 6))
+                expect(await future.spot()).to.be.eq(utils.parseUnits("2535.045566", 6))
+                expect(await future.bidQty()).to.be.eq(utils.parseUnits("10"))
+                expect(await future.bidRate()).to.be.eq(utils.parseUnits("2480.542087", 6))
+            })
+        });
+
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
                 const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
@@ -170,8 +214,8 @@ describe("Futures", async () => {
 
                 await future.long(quantity, price)
 
-                expect(await usdt.balanceOf(usdtPool.address)).to.be.lt(initialUsdtHoldings)
                 expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                expect(await usdt.balanceOf(usdtPool.address)).to.be.lt(initialUsdtHoldings)
             })
 
             it("can go short", async () => {
@@ -179,12 +223,12 @@ describe("Futures", async () => {
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
                 const price = utils.parseUnits("2533", 6);
-                const quantity = utils.parseEther("1");
+                const quantity = utils.parseEther("-1");
 
                 await future.short(quantity, price)
 
+                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
                 expect(await usdt.balanceOf(usdtPool.address)).to.be.gt(initialUsdtHoldings)
-                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.sub(quantity))
             })
         })
     })

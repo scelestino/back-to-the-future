@@ -2,35 +2,70 @@ pragma solidity >=0.6.0 <0.9.0;
 pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import "../interfaces/IFuture.sol";
+import "../interfaces/IPool.sol";
 
 contract FutureStub is IFuture {
-    using SafeMath for uint256;
+    using LowGasSafeMath for int256;
 
-    address public override base;
-    address public override quote;
-    uint public override expiry;
+    IPool public override base;
+    IPool public override quote;
+    //    uint public override expiry;
 
-    uint rate = 1;
+    uint spot = 1;
+    uint bidInterestRate = 0;
+    uint askInterestRate = 0;
+    uint _bidRate = 0;
+    uint _askRate = 0;
 
-    constructor(address _base, address _quote, uint _expiry) {
+    constructor(IPool _base, IPool _quote, uint _expiry) {
         base = _base;
         quote = _quote;
-        expiry = _expiry;
-    }     
-
-    function setRate(uint _rate) external {
-        rate = _rate;
+        //        expiry = _expiry;
     }
 
-    function long(uint quantity, uint price) override external returns (uint) {
-        return quantity.mul(rate);
+    function setSpot(uint _spot) external {
+        spot = _spot;
     }
 
-    function short(uint quantity, uint price) override external returns (uint) {
-        return quantity.mul(rate);
+    function setBidInterestRate(uint _bidInterestRate) external {
+        bidInterestRate = _bidInterestRate;
     }
 
+    function setAskInterestRate(uint _askInterestRate) external {
+        askInterestRate = _askInterestRate;
+    }
 
+    function setBidRate(uint bidRate_) external {
+        _bidRate = bidRate_;
+    }
+
+    function setAskRate(uint askRate_) external {
+        _askRate = askRate_;
+    }
+
+    function long(int quantity, uint price) external override returns (int amountReceived, int amountPaid) {
+        return (quantity, - quantity * int(askRate()) / int(10 ** base.token().decimals()));
+    }
+
+    function short(int quantity, uint price) external override returns (int amountPaid, int amountReceived) {
+        return (quantity, - quantity * int(bidRate()) / int(10 ** base.token().decimals()));
+    }
+
+    function bidRate() public override view returns (uint256) {
+        return _bidRate > 0 ? _bidRate : spot - (bidInterestRate * spot / 10000);
+    }
+
+    function bidQty() external override view returns (uint qty) {
+        qty = base.available();
+    }
+
+    function askRate() public override view returns (uint256) {
+        return _askRate > 0 ? _askRate : spot + (askInterestRate * spot / 10000);
+    }
+
+    function askQty() external override view returns (uint qty) {
+        qty = quote.available();
+    }
 }

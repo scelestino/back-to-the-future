@@ -13,6 +13,7 @@ contract Pool is IPool {
   using LowGasSafeMath for uint256;
 
   ERC20 public override token;
+  uint public override tokenWAD;
 
   uint256 public balance = 0;
   uint256 public borrowed = 0;
@@ -21,6 +22,7 @@ contract Pool is IPool {
 
   constructor (ERC20 _token) {
     token = _token;
+    tokenWAD = 10 ** _token.decimals();
   }
 
   function deposit(uint256 amount) external returns (uint256 share) {
@@ -90,4 +92,7 @@ contract Pool is IPool {
 
   }
 
+  function available() view external override returns (uint qty) {
+    qty = balance.sub(borrowed);
+  }
 }

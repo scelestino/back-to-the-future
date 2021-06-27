@@ -137,7 +137,7 @@ describe("E2E", async () => {
                     const deposit = parseUnits("2000", 6);
                     await traderAccount.deposit(usdt.address, deposit);
 
-                    const futurePrice = await (isLong ? future.ask() : future.bid())
+                    const futurePrice = await (isLong ? future.askRate() : future.bidRate())
                     const expectedFuturePrice = isLong ? parseUnits("2616.774573", 6) : parseUnits("2479.916631", 6)
                     expect(futurePrice).to.be.eq(expectedFuturePrice)
 
@@ -159,7 +159,7 @@ describe("E2E", async () => {
                     expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(initialUsdtHoldings.add(expectedCost))
                     expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
 
-                    const futurePrice2 = await (isLong ? future.ask() : future.bid())
+                    const futurePrice2 = await (isLong ? future.askRate() : future.bidRate())
                     const expectedFuturePrice2 = isLong ? parseUnits("2618.095430", 6) : parseUnits("2478.666427", 6)
                     expect(futurePrice2).to.be.eq(expectedFuturePrice2)
 

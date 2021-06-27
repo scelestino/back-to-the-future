@@ -246,7 +246,7 @@ describe("User Accounts", async () => {
                 await future.setSpot(parseUnits("2500"))
                 await future.setAskRate(parseUnits("2600"))
 
-                let traderPrice = await (openQty.gt(0) ? future.ask() : future.bid())
+                let traderPrice = await (openQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
                 expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
 
@@ -264,7 +264,7 @@ describe("User Accounts", async () => {
                 expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
 
-                traderPrice = await (closeQty.gt(0) ? future.ask() : future.bid())
+                traderPrice = await (closeQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
@@ -301,7 +301,7 @@ describe("User Accounts", async () => {
                 await future.setSpot(parseUnits("2500"))
                 await future.setAskRate(parseUnits("2600"))
 
-                let traderPrice = await (openQty.gt(0) ? future.ask() : future.bid())
+                let traderPrice = await (openQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
                 expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
 
@@ -319,7 +319,7 @@ describe("User Accounts", async () => {
                 expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
 
-                traderPrice = await (closeQty.gt(0) ? future.ask() : future.bid())
+                traderPrice = await (closeQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(0);
@@ -349,7 +349,7 @@ describe("User Accounts", async () => {
                 await future.setSpot(parseUnits("2500"))
                 await future.setAskRate(parseUnits("2600"))
 
-                let traderPrice = await (openQty.gt(0) ? future.ask() : future.bid())
+                let traderPrice = await (openQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
                 expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
 
@@ -360,7 +360,7 @@ describe("User Accounts", async () => {
                 expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
 
-                traderPrice = await (closeQty.gt(0) ? future.ask() : future.bid())
+                traderPrice = await (closeQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
@@ -403,7 +403,7 @@ describe("User Accounts", async () => {
                 await future.setSpot(parseUnits("2500"))
                 await future.setAskRate(parseUnits("2600"))
 
-                const traderPrice = await (quantity.gt(0) ? future.ask() : future.bid())
+                const traderPrice = await (quantity.gt(0) ? future.askRate() : future.bidRate())
 
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(deposit)
                 await traderAccount.placeOrder(future.address, quantity, traderPrice, 5)

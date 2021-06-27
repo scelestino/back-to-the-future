@@ -14,7 +14,11 @@ interface IFuture {
 
     function short(int quantity, uint price) external returns (int amountPaid, int amountReceived);
 
-    function bid() external view returns (uint256 bidRate);
+    function bidRate() external view returns (uint256 bidRate);
 
-    function ask() external view returns (uint256 askRate);
+    function bidQty() external view returns (uint qty);
+
+    function askRate() external view returns (uint256 askRate);
+
+    function askQty() external view returns (uint qty);
 }

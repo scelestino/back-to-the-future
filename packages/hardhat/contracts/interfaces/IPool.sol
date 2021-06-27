@@ -12,4 +12,6 @@ interface IPool {
     function borrow(uint amount, address recipient) external;
 
     function repay(uint amount, uint interest) external;
+
+    function available() view external returns (uint qty);
 }

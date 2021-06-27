@@ -80,21 +80,31 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         //        require(amountReceived >= price.mul(quantity), 'Too little received');
     }
 
-    function spot() public view returns (uint256) {
+    function spot() public view returns (uint256 rate) {
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-        return uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
-        //TODO handle inverted pairs
+        rate = uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
+        if (address(base.token()) == poolKey.token1) {
+            rate = FullMath.mulDiv(base.tokenWAD(), quote.tokenWAD(), rate);
+        }
     }
 
-    function bid() external override view returns (uint256 bidRate) {
-        bidRate = spot();
+    function bidRate() external override view returns (uint256 rate) {
+        rate = spot();
         //TODO hardcoded to 2.15%, should come from the pricing formula using the pool rates
-        bidRate = bidRate - FullMath.mulDiv(215, bidRate, 10000);
+        rate = rate - FullMath.mulDiv(215, rate, 10000);
     }
 
-    function ask() external override view returns (uint256 askRate) {
-        askRate = spot();
+    function bidQty() external override view returns (uint qty) {
+        qty = base.available();
+    }
+
+    function askRate() public override view returns (uint256 rate) {
+        rate = spot();
         //TODO hardcoded to 3.25%, should come from the pricing formula using the pool rates
-        askRate = askRate + FullMath.mulDiv(325, askRate, 10000);
+        rate = rate + FullMath.mulDiv(325, rate, 10000);
+    }
+
+    function askQty() external override view returns (uint qty) {
+        qty = FullMath.mulDiv(quote.available(), base.tokenWAD(), askRate());
     }
 }

@@ -22,4 +22,8 @@ contract PoolStub is IPool {
     function repay(uint amount, uint interest) external override {
 
     }
+
+    function available() view external override returns (uint qty) {
+        return 0;
+    }
 }

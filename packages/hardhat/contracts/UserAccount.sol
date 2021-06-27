@@ -57,7 +57,7 @@ contract UserAccount {
             Fill memory fill = traderFills[i];
             if (address(fill.future.quote().token()) == token) {
                 //consider the rate that it'd paid to close the fill, aka the other side of the market
-                int marketRate = int(fill.openQuantity > 0 ? fill.future.bid() : fill.future.ask());
+                int marketRate = int(fill.openQuantity > 0 ? fill.future.bidRate() : fill.future.askRate());
                 // TODO how safe are this math operations?
                 margin += fill.openQuantity * marketRate / (fill.leverage * int(fill.future.base().tokenWAD()));
             }
@@ -66,8 +66,9 @@ contract UserAccount {
     }
 
     function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage) external {
-        uint marketPrice = _quantity > 0 ? future.ask() : future.bid();
-        require(price >= marketPrice, "UserAccount: invalid price");
+        (uint liquidity, uint marketRate) = _quantity > 0 ? (future.askQty(), future.askRate()) : (future.bidQty(), future.bidRate());
+        require(price >= marketRate, "UserAccount: invalid price");
+        require(liquidity >= abs(_quantity), "UserAccount: invalid quantity");
         require(_quantity != 0, "UserAccount: can't open a position with 0 amount");
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");

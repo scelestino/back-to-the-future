@@ -92,4 +92,7 @@ contract Pool is IPool {
 
   }
 
+  function available() view external override returns (uint qty) {
+    qty = balance.sub(borrowed);
+  }
 }

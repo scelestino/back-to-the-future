@@ -94,9 +94,11 @@ describe("Futures", async () => {
 
         describe("Futures can be priced", async () => {
             it("can compute the spot price", async () => {
-                expect(await future.ask()).to.be.eq(utils.parseUnits("0.000408312720553566"))
-                expect(await future.spot()).to.be.eq(utils.parseUnits("0.000395460262037353"))
-                expect(await future.bid()).to.be.eq(utils.parseUnits("0.000386957866403550"))
+                expect(await future.askQty()).to.be.eq(utils.parseUnits("9.575309008168353510"))
+                expect(await future.askRate()).to.be.eq(utils.parseUnits("2610.881798036323892886"))
+                expect(await future.spot()).to.be.eq(utils.parseUnits("2528.699078001282220713"))
+                expect(await future.bidQty()).to.be.eq(utils.parseUnits("10"))
+                expect(await future.bidRate()).to.be.eq(utils.parseUnits("2474.332047824254652968"))
             })
         });
 
@@ -194,9 +196,11 @@ describe("Futures", async () => {
 
         describe("Futures can be priced", async () => {
             it("can compute the spot price", async () => {
-                expect(await future.ask()).to.be.eq(utils.parseUnits("2617.434546", 6))
+                expect(await future.askQty()).to.be.eq(utils.parseUnits("9.551337219952777378"))
+                expect(await future.askRate()).to.be.eq(utils.parseUnits("2617.434546", 6))
                 expect(await future.spot()).to.be.eq(utils.parseUnits("2535.045566", 6))
-                expect(await future.bid()).to.be.eq(utils.parseUnits("2480.542087", 6))
+                expect(await future.bidQty()).to.be.eq(utils.parseUnits("10"))
+                expect(await future.bidRate()).to.be.eq(utils.parseUnits("2480.542087", 6))
             })
         });
 

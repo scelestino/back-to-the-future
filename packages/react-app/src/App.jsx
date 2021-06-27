@@ -23,7 +23,7 @@ import {
   useUserProvider,
 } from "./hooks";
 // import Hints from "./Hints";
-import { ExampleUI, Hints, Subgraph } from "./views";
+import { ExampleUI, Hints, Subgraph, Vanila } from "./views";
 /*
     Welcome to 🏗 scaffold-eth !
 
@@ -323,6 +323,16 @@ function App(props) {
               ExampleUI
             </Link>
           </Menu.Item>
+          <Menu.Item key="/vanila">
+            <Link
+              onClick={() => {
+                setRoute("/vanila");
+              }}
+              to="/vanila"
+            >
+              Vanila
+            </Link>
+          </Menu.Item>
           <Menu.Item key="/mainnetdai">
             <Link
               onClick={() => {
@@ -404,6 +414,9 @@ function App(props) {
               purpose={purpose}
               setPurposeEvents={setPurposeEvents}
             />
+          </Route>
+          <Route path="/vanila">
+            <Vanila/>
           </Route>
           <Route path="/mainnetdai">
             <Contract

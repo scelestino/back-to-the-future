@@ -290,7 +290,7 @@ describe("User Accounts", async () => {
             [parseEther("2"), parseUnits("-5200"), parseUnits("140"), parseUnits("-2")],
             [parseEther("-2"), parseUnits("4800"), parseUnits("60"), parseUnits("2")]
         ].forEach(([openQty, openCost, purchasingPower, closeQty]) => {
-            it.only(`should allow opposite orders if they'll close an existing position qty=${openQty}`, async () => {
+            it(`should allow opposite orders if they'll close an existing position qty=${openQty}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
                 const deposit = parseUnits("1100");
                 await traderAccount.deposit(lusd.address, deposit);
@@ -334,6 +334,61 @@ describe("User Accounts", async () => {
             })
         });
 
+        [
+            [parseEther("2"), parseUnits("-5200"), parseUnits("140"), parseUnits("-1"), parseUnits("420")],
+            [parseEther("-2"), parseUnits("4800"), parseUnits("60"), parseUnits("1"), parseUnits("380")]
+        ].forEach(([openQty, openCost, purchasingPower, closeQty, purchasingPower2]) => {
+            it(`can reduce position till it's closed qty=${openQty}`, async () => {
+                const traderAccount = userAccount.connect(trader1)
+                const deposit = parseUnits("1100");
+                await traderAccount.deposit(lusd.address, deposit);
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                await future.deployed()
+                expect(future.address).to.properAddress
+                await future.setBidRate(parseUnits("2400"))
+                await future.setSpot(parseUnits("2500"))
+                await future.setAskRate(parseUnits("2600"))
+
+                let traderPrice = await (openQty.gt(0) ? future.ask() : future.bid())
+                await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
+                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
+
+                expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
+
+                let position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(openQty)
+                expect(position.cost).to.be.eq(openCost)
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
+
+                traderPrice = await (closeQty.gt(0) ? future.ask() : future.bid())
+                await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
+
+                expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
+
+                position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(openQty.div(2))
+                expect(position.cost).to.be.eq(openCost.div(2))
+
+                //PnL == 200
+                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("900"))
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower2)
+
+                await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
+
+                expect(await traderAccount.noFills(trader1.address)).to.be.eq(0);
+
+                position = await traderAccount.position(trader1.address, future.address);
+                expect(position.quantity).to.be.eq(0)
+                expect(position.cost).to.be.eq(0)
+
+                //PnL == 400
+                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
+                expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
+            })
+        });
+
+        // TODO add test (and impl) for when close fill is bigger than the existent position
+
         [[parseUnits("2"), parseUnits("1040")],
             [parseUnits("-2"), parseUnits("960")]].forEach(([quantity, purchasingPower]) => {
 
@@ -348,8 +403,10 @@ describe("User Accounts", async () => {
                 await future.setSpot(parseUnits("2500"))
                 await future.setAskRate(parseUnits("2600"))
 
+                const traderPrice = await (quantity.gt(0) ? future.ask() : future.bid())
+
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(deposit)
-                await traderAccount.placeOrder(future.address, quantity, price, 5)
+                await traderAccount.placeOrder(future.address, quantity, traderPrice, 5)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
             })
         });

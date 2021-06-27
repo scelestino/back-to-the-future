@@ -1,7 +1,7 @@
 import React from 'react';
 import _Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
+import _TableCell from '@material-ui/core/TableCell';
 import _TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
@@ -16,7 +16,12 @@ const TableContainer = styled(_TableContainer)`
 
 const Table = styled(_Table)`
   min-width: 650px;
+  .MuiTableCell-root {
+    padding: 0;
+  }
 `
+
+const TableCell = styled(_TableCell)``
 
 const Positions = () => {
   const positions = usePositions()
@@ -26,12 +31,12 @@ const Positions = () => {
         <TableHead>
           <TableRow>
             <TableCell>Contract</TableCell>
-            <TableCell align="right">Side</TableCell>
-            <TableCell align="right">Size</TableCell>
-            <TableCell align="right">Entry Price</TableCell>
-            <TableCell align="right">Liquidation Price</TableCell>
-            <TableCell align="right">Margin</TableCell>
-            <TableCell align="right"></TableCell>
+            <TableCell align="center">Side</TableCell>
+            <TableCell align="center">Size</TableCell>
+            <TableCell align="center">Entry Price</TableCell>
+            <TableCell align="center">Liquidation Price</TableCell>
+            <TableCell align="center">Margin</TableCell>
+            <TableCell align="center"></TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -40,12 +45,12 @@ const Positions = () => {
               <TableCell component="th" scope="row">
                 {contract}
               </TableCell>
-              <TableCell align="right">{side}</TableCell>
-              <TableCell align="right">{size}</TableCell>
-              <TableCell align="right">{entryPrice}</TableCell>
-              <TableCell align="right">{liquidationPrice}</TableCell>
-              <TableCell align="right">{margin}</TableCell>
-              <TableCell align="right">
+              <TableCell align="center">{side}</TableCell>
+              <TableCell align="center">{size}</TableCell>
+              <TableCell align="center">{entryPrice}</TableCell>
+              <TableCell align="center">{liquidationPrice}</TableCell>
+              <TableCell align="center">{margin}</TableCell>
+              <TableCell align="center">
                 <Button>Settle</Button>
               </TableCell>
             </TableRow>

@@ -90,8 +90,20 @@ contract UserAccount {
             if (traderFills[i].future == future && signum(traderFills[i].openQuantity) != signum(rightFill.openQuantity)) {
                 // rightFill can close leftFill completely
                 if (abs(rightFill.openQuantity) >= abs(traderFills[i].openQuantity)) {
+                    Fill memory leftFill = traderFills[i];
+                    int pnl = leftFill.openCost + rightFill.openCost;
+                    wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())].add(pnl);
+                    // TODO what to do with the PnL???
 
+                    int closeCost = signum(leftFill.openCost) * int(FullMath.mulDiv(abs(leftFill.openQuantity), abs(rightFill.openCost), abs(rightFill.openQuantity)));
+                    rightFill.openQuantity += leftFill.openQuantity;
+                    rightFill.openCost += closeCost;
 
+                    position.quantity -= leftFill.openQuantity;
+                    position.cost -= leftFill.openCost;
+
+                    removeFill(traderFills, i);
+                    i--;
                 } else {
                     // rightFill partially closes leftFill
                     Fill storage leftFill = traderFills[i];
@@ -102,7 +114,6 @@ contract UserAccount {
                     leftFill.closeQuantity += rightFill.openQuantity;
 
                     int pnl = rightFill.openCost - closeCost;
-
                     wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())].add(pnl);
                     // TODO what to do with the PnL???
 
@@ -129,6 +140,14 @@ contract UserAccount {
 
     function signum(int x) internal pure returns (int) {
         return x >= 0 ? int(1) : - 1;
+    }
+
+    function removeFill(Fill[] storage traderFills, uint index) internal {
+        if (index >= traderFills.length) return;
+        for (uint i = index; i < traderFills.length - 1; i++) {
+            traderFills[i] = traderFills[i + 1];
+        }
+        traderFills.pop();
     }
 
     struct Fill {

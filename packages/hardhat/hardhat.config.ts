@@ -1,9 +1,11 @@
-import {HardhatUserConfig} from "hardhat/types";
-import {config as dotEnvConfig} from "dotenv";
-import 'hardhat-watcher';
+import {HardhatUserConfig} from 'hardhat/types'
+import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
+import {config as dotEnvConfig} from 'dotenv'
+import 'hardhat-watcher'
 
 // const { utils } = require("ethers");
-const fs = require("fs");
+const fs = require('fs')
+const R = require('ramda')
 // const chalk = require("chalk");
 //
 // require("@nomiclabs/hardhat-waffle");
@@ -11,11 +13,14 @@ const fs = require("fs");
 //
 // require("@nomiclabs/hardhat-etherscan");
 
-import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "@nomiclabs/hardhat-etherscan";
+import { task } from 'hardhat/config'
+import { parseEther } from 'ethers/lib/utils'
 
-dotEnvConfig();
+import "@nomiclabs/hardhat-waffle"
+import "@typechain/hardhat"
+import "@nomiclabs/hardhat-etherscan"
+
+dotEnvConfig()
 
 // const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
@@ -159,6 +164,19 @@ const config: HardhatUserConfig = {
 };
 
 export default config;
+
+task('fund', 'Add WETH and DAI to Test Accounts')
+  .setAction(async (taskArgs, { network, ethers }) => {
+
+    const signers = await ethers.getSigners()
+
+    console.log('Adding WETH to all Test Accounts')
+    const weth = await ethers.getContractAt('IWETH9', '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2')
+    for(let i = 0; i < signers.length; i++) {
+      await weth.connect(signers[i]).deposit({value: parseEther('1000')})
+    }
+
+  })
 
 // const DEBUG = false;
 //

@@ -1,16 +1,31 @@
 pragma solidity >=0.6.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
+import "hardhat/console.sol";
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 
 import "./interfaces/IPool.sol";
 
 contract Pool is IPool {
     using SafeERC20 for ERC20;
-    using LowGasSafeMath for uint256;
+    using SafeMath for uint256;
+
+    uint256 public constant BIPS_BASE = 10000;
+    // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
+    uint256 public immutable OPTIMAL_UTILIZATION_RATE;
+    // This constant represents the excess utilization rate above the optimal.
+    // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
+    uint256 public immutable EXCESS_UTILIZATION_RATE;
+    // Base variable borrow rate when Utilization rate = 0.
+    uint256 internal immutable baseBorrowRate;
+    // Slope of the variable interest curve when utilization rate > 0 and <= OPTIMAL_UTILIZATION_RATE.
+    uint256 internal immutable slope1;
+    // Slope of the variable interest curve when utilization rate > OPTIMAL_UTILIZATION_RATE.
+    uint256 internal immutable slope2;
+
 
     ERC20 public override token;
     uint public override tokenWAD;
@@ -20,9 +35,20 @@ contract Pool is IPool {
     uint256 public totalShare = 0;
     mapping(address => uint256) shares;
 
-    constructor (ERC20 _token) {
+    constructor (
+        ERC20 _token,
+        uint256 _optimalUtilizationRate,
+        uint256 _baseBorrowRate,
+        uint256 _slope1,
+        uint256 _slope2
+    ) {
         token = _token;
         tokenWAD = 10 ** _token.decimals();
+        OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
+        EXCESS_UTILIZATION_RATE = uint(BIPS_BASE).sub(_optimalUtilizationRate);
+        baseBorrowRate = _baseBorrowRate;
+        slope1 = _slope1;
+        slope2 = _slope2;
     }
 
     function deposit(uint256 amount) external returns (uint256 share) {
@@ -94,5 +120,21 @@ contract Pool is IPool {
 
     function available() view external override returns (uint qty) {
         qty = balance.sub(borrowed);
+    }
+
+    function borrowingRate() view external override returns (uint rate) {
+        uint utilizationRate = borrowed == 0
+        ? 0
+        : FullMath.mulDiv(BIPS_BASE, borrowed, balance);
+
+        if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
+            rate = baseBorrowRate.add(slope1).add(
+                utilizationRate.sub(OPTIMAL_UTILIZATION_RATE).mul(BIPS_BASE)
+                .div(EXCESS_UTILIZATION_RATE)
+                .mul(slope2).div(BIPS_BASE)
+            );
+        } else {
+            rate = baseBorrowRate.add(utilizationRate.mul(slope1).div(OPTIMAL_UTILIZATION_RATE));
+        }
     }
 }

@@ -63,7 +63,7 @@ describe("E2E", async () => {
         weth = IWETH9__factory.connect(wethAddress, deployer)
         await weth.connect(lender).deposit({value: parseEther("100")})
         expect(await weth.balanceOf(lender.address)).to.be.eq(parseEther("100"))
-        wethPool = await poolFactory.deploy(weth.address)
+        wethPool = await poolFactory.deploy(weth.address,0,0,0,0)
         await wethPool.deployed()
         await weth.connect(lender).approve(wethPool.address, constants.MaxUint256)
         await wethPool.connect(lender).deposit(parseUnits("10"))
@@ -86,7 +86,7 @@ describe("E2E", async () => {
             sqrtPriceLimitX96: 0
         })
         expect(await usdt.balanceOf(lender.address)).to.be.gte(_25k)
-        usdtPool = await poolFactory.deploy(usdt.address)
+        usdtPool = await poolFactory.deploy(usdt.address,0,0,0,0)
         await usdtPool.deployed()
         await usdt.connect(lender).approve(usdtPool.address, constants.MaxUint256)
         await usdtPool.connect(lender).deposit(_25k)

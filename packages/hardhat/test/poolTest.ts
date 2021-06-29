@@ -2,7 +2,7 @@ import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
 import chai from 'chai'
 import chaiAsPromised from "chai-as-promised"
 import {solidity} from "ethereum-waffle"
-import {BigNumber, utils} from 'ethers'
+import {utils} from 'ethers'
 import {ethers} from 'hardhat'
 import {ERC20Stub, ERC20Stub__factory, Pool, Pool__factory} from '../typechain'
 
@@ -16,8 +16,9 @@ describe("Pool", async () => {
     let lp1: SignerWithAddress
     let lp2: SignerWithAddress
     let uniswap: string
+    let poolFactory: Pool__factory
 
-    let weth: ERC20Stub
+    let erc20: ERC20Stub
 
     let sut: Pool
 
@@ -31,25 +32,25 @@ describe("Pool", async () => {
         uniswap = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
 
         const erc20Factory = (await ethers.getContractFactory('ERC20Stub', owner)) as ERC20Stub__factory
-        weth = await erc20Factory.deploy("Wrapped ETH", "WETH")
-        await weth.deployed()
-        expect(weth.address).to.properAddress
+        erc20 = await erc20Factory.deploy("Wrapped ETH", "WETH")
+        await erc20.deployed()
+        expect(erc20.address).to.properAddress
 
-        const poolFactory = (await ethers.getContractFactory('Pool', owner)) as Pool__factory
-        sut = await poolFactory.deploy(weth.address)
+        poolFactory = (await ethers.getContractFactory('Pool', owner)) as Pool__factory
+        sut = await poolFactory.deploy(erc20.address, 0, 0, 0, 0)
         await sut.deployed()
         expect(sut.address).to.properAddress
 
-        await weth.setBalance(owner.address, parseUnits("1000000"))
-        await weth.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+        await erc20.setBalance(owner.address, parseUnits("1000000"))
+        await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
 
-        await weth.setBalance(lp1.address, parseUnits("1000"))
-        await weth.connect(lp1).approve(sut.address, ethers.constants.MaxUint256)
+        await erc20.setBalance(lp1.address, parseUnits("1000"))
+        await erc20.connect(lp1).approve(sut.address, ethers.constants.MaxUint256)
 
-        await weth.setBalance(lp2.address, parseUnits("1000"))
-        await weth.connect(lp2).approve(sut.address, ethers.constants.MaxUint256)
+        await erc20.setBalance(lp2.address, parseUnits("1000"))
+        await erc20.connect(lp2).approve(sut.address, ethers.constants.MaxUint256)
 
-        await weth.setBalance(uniswap, parseUnits("0"))
+        await erc20.setBalance(uniswap, parseUnits("0"))
 
     })
 
@@ -63,8 +64,8 @@ describe("Pool", async () => {
             expect(await sut.balanceOf(lp1.address)).to.be.eq(parseUnits("450"))
             expect(await sut.shareOf(lp1.address)).to.be.eq(parseUnits("100", 0))
 
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("450"))
-            expect(await weth.balanceOf(lp1.address)).to.be.eq(parseUnits("550"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("450"))
+            expect(await erc20.balanceOf(lp1.address)).to.be.eq(parseUnits("550"))
 
         })
 
@@ -80,9 +81,9 @@ describe("Pool", async () => {
             expect(await sut.shareOf(lp1.address)).to.be.eq(parseUnits("33", 0))
             expect(await sut.shareOf(lp2.address)).to.be.eq(parseUnits("66", 0))
 
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("600"))
-            expect(await weth.balanceOf(lp1.address)).to.be.eq(parseUnits("800"))
-            expect(await weth.balanceOf(lp2.address)).to.be.eq(parseUnits("600"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("600"))
+            expect(await erc20.balanceOf(lp1.address)).to.be.eq(parseUnits("800"))
+            expect(await erc20.balanceOf(lp2.address)).to.be.eq(parseUnits("600"))
 
         })
 
@@ -111,7 +112,7 @@ describe("Pool", async () => {
             await sut.borrow(parseUnits("100"), uniswap)
 
             expect(await sut.borrowed()).to.be.eq(parseUnits("100"))
-            expect(await weth.balanceOf(uniswap)).to.be.eq(parseUnits("100"))
+            expect(await erc20.balanceOf(uniswap)).to.be.eq(parseUnits("100"))
 
         })
 
@@ -199,8 +200,8 @@ describe("Pool", async () => {
             expect(await sut.balanceOf(lp1.address)).to.be.eq(parseUnits("200"))
             expect(await sut.shareOf(lp1.address)).to.be.eq(parseUnits("100", 0))
 
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("200"))
-            expect(await weth.balanceOf(lp1.address)).to.be.eq(parseUnits("800"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("200"))
+            expect(await erc20.balanceOf(lp1.address)).to.be.eq(parseUnits("800"))
 
             // Withdrawal
             await sut.connect(lp1).withdraw(parseUnits("200"))
@@ -208,8 +209,8 @@ describe("Pool", async () => {
             expect(await sut.balanceOf(lp1.address)).to.be.eq(parseUnits("0"))
             expect(await sut.shareOf(lp1.address)).to.be.eq(parseUnits("0"))
 
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("0"))
-            expect(await weth.balanceOf(lp1.address)).to.be.eq(parseUnits("1000"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("0"))
+            expect(await erc20.balanceOf(lp1.address)).to.be.eq(parseUnits("1000"))
 
         })
 
@@ -222,7 +223,7 @@ describe("Pool", async () => {
             expect(await sut.balanceOf(lp1.address)).to.be.eq(parseUnits("500"))
             expect(await sut.shareOf(lp1.address)).to.be.eq(parseUnits("100", 0))
 
-            expect(await weth.balanceOf(lp1.address)).to.be.eq(parseUnits("500"))
+            expect(await erc20.balanceOf(lp1.address)).to.be.eq(parseUnits("500"))
 
             // Withdrawal
             await sut.connect(lp1).withdraw(parseUnits("200"))
@@ -230,8 +231,8 @@ describe("Pool", async () => {
             expect(await sut.balanceOf(lp1.address)).to.be.eq(parseUnits("300"))
             expect(await sut.shareOf(lp1.address)).to.be.eq(parseUnits("100", 0))
 
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("300"))
-            expect(await weth.balanceOf(lp1.address)).to.be.eq(parseUnits("700"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("300"))
+            expect(await erc20.balanceOf(lp1.address)).to.be.eq(parseUnits("700"))
 
         })
 
@@ -256,7 +257,7 @@ describe("Pool", async () => {
         it("should return zero for a liquidity provider without deposits ", async () => {
             await sut.connect(lp1).deposit(parseUnits("500"))
             expect(await sut.balanceOf(lp2.address)).to.be.eq(parseUnits("0"))
-            expect(await weth.balanceOf(lp2.address)).to.be.eq(parseUnits("1000"))
+            expect(await erc20.balanceOf(lp2.address)).to.be.eq(parseUnits("1000"))
         })
 
     })
@@ -264,15 +265,42 @@ describe("Pool", async () => {
     describe("Underlying Balance", async () => {
 
         it("should start with zero", async () => {
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("0"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("0"))
         })
 
         it("should be equals to the sum of all its deposits", async () => {
             await sut.connect(lp1).deposit(parseUnits("200"))
             await sut.connect(lp2).deposit(parseUnits("1000"))
-            expect(await weth.balanceOf(sut.address)).to.be.eq(parseUnits("1200"))
+            expect(await erc20.balanceOf(sut.address)).to.be.eq(parseUnits("1200"))
         })
 
     })
 
+    describe("Borrowing rate", async () => {
+
+        [
+            [parseUnits("100"), parseUnits("10"), parseUnits("1.23", 2), 6500, 0, 800, 10000],
+            [parseUnits("100"), parseUnits("10"), parseUnits("11.23", 2), 6500, 1000, 800, 10000],
+            [parseUnits("100"), parseUnits("65"), parseUnits("8", 2), 6500, 0, 800, 10000],
+            [parseUnits("100"), parseUnits("80"), parseUnits("50.85", 2), 6500, 0, 800, 10000],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("1.25", 2), 8000, 0, 400, 7500],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("6.25", 2), 8000, 500, 400, 7500],
+            [parseUnits("100000"), parseUnits("80000"), parseUnits("4", 2), 8000, 0, 400, 7500],
+            [parseUnits("100000"), parseUnits("90000"), parseUnits("41.5", 2), 8000, 0, 400, 7500]
+        ].forEach(([poolSize, borrowedAmount, borrowingRate, optimalUtilizationRate, baseBorrowRate, slope1, slope2]) => [
+            it(`should return the borrowing rate for poolSize = ${poolSize.toString()}, borrowed amount = ${borrowedAmount.toString()}`, async () => {
+                sut = await poolFactory.deploy(erc20.address, optimalUtilizationRate, baseBorrowRate, slope1, slope2)
+                await sut.deployed()
+                expect(sut.address).to.properAddress
+                await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+
+                expect(await sut.borrowingRate()).to.be.eq(baseBorrowRate)
+
+                await sut.connect(owner).deposit(poolSize)
+                await sut.borrow(borrowedAmount, uniswap)
+
+                expect(await sut.borrowingRate()).to.be.eq(borrowingRate)
+            })
+        ]);
+    })
 })

@@ -24,6 +24,10 @@ contract PoolStub is IPool {
     }
 
     function available() view external override returns (uint qty) {
-        return 0;
+        qty = 0;
+    }
+
+    function borrowingRate() view external override returns (uint rate) {
+        rate = 0;
     }
 }

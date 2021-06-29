@@ -64,12 +64,12 @@ describe("User Accounts", async () => {
 
 
         const poolFactory = (await ethers.getContractFactory('Pool', owner)) as Pool__factory
-        wethPool = await poolFactory.deploy(weth.address)
+        wethPool = await poolFactory.deploy(weth.address, 0, 0, 0, 0)
         await wethPool.deployed()
         await weth.connect(lender).approve(wethPool.address, constants.MaxUint256)
         await wethPool.connect(lender).deposit(utils.parseUnits("10"))
 
-        lusdPool = await poolFactory.deploy(lusd.address)
+        lusdPool = await poolFactory.deploy(lusd.address, 0, 0, 0, 0)
         await lusdPool.deployed()
         await lusd.connect(lender).approve(lusdPool.address, constants.MaxUint256)
         await lusdPool.connect(lender).deposit(utils.parseUnits("25000"))

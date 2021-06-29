@@ -4,26 +4,25 @@ pragma solidity >=0.6.0 <0.9.0;
 import "hardhat/console.sol";
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 
 import "./interfaces/IPool.sol";
+import "./libraries/DSMath.sol";
 
 contract Pool is IPool {
     using SafeERC20 for ERC20;
-    using SafeMath for uint256;
+    using DSMath for uint256;
 
-    uint256 public constant BIPS_BASE = 10000;
-    // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
+    // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates. Expressed in ray
     uint256 public immutable OPTIMAL_UTILIZATION_RATE;
-    // This constant represents the excess utilization rate above the optimal.
+    // This constant represents the excess utilization rate above the optimal. Expressed in ray
     // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
     uint256 public immutable EXCESS_UTILIZATION_RATE;
-    // Base variable borrow rate when Utilization rate = 0.
+    // Base variable borrow rate when Utilization rate = 0. Expressed in ray
     uint256 internal immutable baseBorrowRate;
-    // Slope of the variable interest curve when utilization rate > 0 and <= OPTIMAL_UTILIZATION_RATE.
+    // Slope of the variable interest curve when utilization rate > 0 and <= OPTIMAL_UTILIZATION_RATE. Expressed in ray
     uint256 internal immutable slope1;
-    // Slope of the variable interest curve when utilization rate > OPTIMAL_UTILIZATION_RATE.
+    // Slope of the variable interest curve when utilization rate > OPTIMAL_UTILIZATION_RATE. Expressed in ray
     uint256 internal immutable slope2;
 
 
@@ -45,7 +44,7 @@ contract Pool is IPool {
         token = _token;
         tokenWAD = 10 ** _token.decimals();
         OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
-        EXCESS_UTILIZATION_RATE = uint(BIPS_BASE).sub(_optimalUtilizationRate);
+        EXCESS_UTILIZATION_RATE = DSMath.RAY.sub(_optimalUtilizationRate);
         baseBorrowRate = _baseBorrowRate;
         slope1 = _slope1;
         slope2 = _slope2;
@@ -123,18 +122,13 @@ contract Pool is IPool {
     }
 
     function borrowingRate() view external override returns (uint rate) {
-        uint utilizationRate = borrowed == 0
-        ? 0
-        : FullMath.mulDiv(BIPS_BASE, borrowed, balance);
+        uint utilizationRate = borrowed == 0 ? 0 : borrowed.rdiv(balance);
 
         if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-            rate = baseBorrowRate.add(slope1).add(
-                utilizationRate.sub(OPTIMAL_UTILIZATION_RATE).mul(BIPS_BASE)
-                .div(EXCESS_UTILIZATION_RATE)
-                .mul(slope2).div(BIPS_BASE)
-            );
+            uint256 excessUtilizationRateRatio = utilizationRate.sub(OPTIMAL_UTILIZATION_RATE).rdiv(EXCESS_UTILIZATION_RATE);
+            rate = baseBorrowRate.add(slope1).add(slope2.rmul(excessUtilizationRateRatio));
         } else {
-            rate = baseBorrowRate.add(utilizationRate.mul(slope1).div(OPTIMAL_UTILIZATION_RATE));
+            rate = baseBorrowRate.add(utilizationRate.rmul(slope1).rdiv(OPTIMAL_UTILIZATION_RATE));
         }
     }
 }

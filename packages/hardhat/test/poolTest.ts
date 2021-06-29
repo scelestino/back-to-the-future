@@ -279,14 +279,14 @@ describe("Pool", async () => {
     describe("Borrowing rate", async () => {
 
         [
-            [parseUnits("100"), parseUnits("10"), parseUnits("1.23", 2), 6500, 0, 800, 10000],
-            [parseUnits("100"), parseUnits("10"), parseUnits("11.23", 2), 6500, 1000, 800, 10000],
-            [parseUnits("100"), parseUnits("65"), parseUnits("8", 2), 6500, 0, 800, 10000],
-            [parseUnits("100"), parseUnits("80"), parseUnits("50.85", 2), 6500, 0, 800, 10000],
-            [parseUnits("100000"), parseUnits("25000"), parseUnits("1.25", 2), 8000, 0, 400, 7500],
-            [parseUnits("100000"), parseUnits("25000"), parseUnits("6.25", 2), 8000, 500, 400, 7500],
-            [parseUnits("100000"), parseUnits("80000"), parseUnits("4", 2), 8000, 0, 400, 7500],
-            [parseUnits("100000"), parseUnits("90000"), parseUnits("41.5", 2), 8000, 0, 400, 7500]
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.012307692307692307692307692", 27), parseUnits("0.65", 27), 0, parseUnits("0.08", 27), parseUnits("1", 27)],
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.112307692307692307692307692", 27), parseUnits("0.65", 27), parseUnits("0.1", 27), parseUnits("0.08", 27), parseUnits("1", 27)],
+            [parseUnits("100"), parseUnits("65"), parseUnits("0.08", 27), parseUnits("0.65", 27), 0, parseUnits("0.08", 27), parseUnits("1", 27)],
+            [parseUnits("100"), parseUnits("80"), parseUnits("0.508571428571428571428571429", 27), parseUnits("0.65", 27), 0, parseUnits("0.08", 27), parseUnits("1", 27)],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0125", 27), parseUnits("0.8", 27), 0, parseUnits("0.04", 27), parseUnits("0.75", 27)],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0625", 27), parseUnits("0.8", 27), parseUnits("0.05", 27), parseUnits("0.04", 27), parseUnits("0.75", 27)],
+            [parseUnits("100000"), parseUnits("80000"), parseUnits("0.04", 27), parseUnits("0.8", 27), 0, parseUnits("0.04", 27), parseUnits("0.75", 27)],
+            [parseUnits("100000"), parseUnits("90000"), parseUnits("0.415", 27), parseUnits("0.8", 27), 0, parseUnits("0.04", 27), parseUnits("0.75", 27)]
         ].forEach(([poolSize, borrowedAmount, borrowingRate, optimalUtilizationRate, baseBorrowRate, slope1, slope2]) => [
             it(`should return the borrowing rate for poolSize = ${poolSize.toString()}, borrowed amount = ${borrowedAmount.toString()}`, async () => {
                 sut = await poolFactory.deploy(erc20.address, optimalUtilizationRate, baseBorrowRate, slope1, slope2)

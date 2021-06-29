@@ -45,7 +45,7 @@
   },
   "scripts": {
     "chain": "hardhat node",
-    "fork": "hardhat node --fork https://mainnet.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad",
+    "fork": "hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/sfNyMHuPAFaySUdhWbAVMHmzSrslketU --fork-block-number 12628614",
     "test": "hardhat test --network hardhat",
     "test:watch": "npx hardhat watch test --network hardhat",
     "compile:watch": "npx hardhat watch compilation",

@@ -5,11 +5,16 @@ const { config, ethers, tenderly, run } = require("hardhat");
 const { utils } = require("ethers");
 const R = require("ramda");
 
+const uniswapFactory = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+
 const main = async () => {
 
   console.log("\n\n 📡 Deploying...\n");
 
-  const yourContract = await deploy("YourContract") // <-- add in constructor args like line 19 vvvv
+  const wethPoolContract = await deploy("WETHPool")
+  const usdtPoolContract = await deploy("DAIPool")
+  const userAccountContract = await deploy("UserAccount")
+  const futureContract = await deploy("Future", [wethPoolContract.address, usdtPoolContract.address, 5, uniswapFactory])
 
   //const yourContract = await ethers.getContractAt('YourContract', "0xaAC799eC2d00C013f1F11c37E654e59B0429DF6A") //<-- if you want to instantiate a version of a contract at a specific address!
   //const secondContract = await deploy("SecondContract")

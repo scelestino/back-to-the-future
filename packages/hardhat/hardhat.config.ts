@@ -3,22 +3,15 @@ import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
 import {config as dotEnvConfig} from 'dotenv'
 import 'hardhat-watcher'
 
-// const { utils } = require("ethers");
 const fs = require('fs')
-const R = require('ramda')
-// const chalk = require("chalk");
-//
-// require("@nomiclabs/hardhat-waffle");
-// require("@tenderly/hardhat-tenderly")
-//
-// require("@nomiclabs/hardhat-etherscan");
 
 import { task } from 'hardhat/config'
-import { parseEther } from 'ethers/lib/utils'
+import { parseEther, parseUnits } from 'ethers/lib/utils'
+import { constants } from 'ethers'
 
-import "@nomiclabs/hardhat-waffle"
-import "@typechain/hardhat"
-import "@nomiclabs/hardhat-etherscan"
+import '@nomiclabs/hardhat-waffle'
+import '@typechain/hardhat'
+import '@nomiclabs/hardhat-etherscan'
 
 dotEnvConfig()
 
@@ -168,13 +161,40 @@ export default config;
 task('fund', 'Add WETH and DAI to Test Accounts')
   .setAction(async (taskArgs, { network, ethers }) => {
 
+    const wethAddres = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+    const daiAddres = '0x6b175474e89094c44da98b954eedeac495271d0f'
+    const uniswapAddres = '0xE592427A0AEce92De3Edee1F18E0157C05861564'
+
     const signers = await ethers.getSigners()
 
     console.log('Adding WETH to all Test Accounts')
-    const weth = await ethers.getContractAt('IWETH9', '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2')
+    const weth = await ethers.getContractAt('IWETH9', wethAddres)
     for(let i = 0; i < signers.length; i++) {
       await weth.connect(signers[i]).deposit({value: parseEther('1000')})
+      console.log('WETH added to ' + signers[i].address)
     }
+    console.log('Done\n\n')
+
+    console.log('Adding DAI to all Test Accounts')
+
+    const uniswap = await ethers.getContractAt('ISwapRouter', uniswapAddres)
+
+    for(let i = 0; i < signers.length; i++) {
+      await weth.connect(signers[i]).approve(uniswapAddres, constants.MaxUint256)
+      const _25k = parseUnits('25000', 6);
+      await uniswap.connect(signers[i]).exactInputSingle({
+          tokenIn: wethAddres,
+          tokenOut: daiAddres,
+          fee: 500,
+          recipient: signers[i].address,
+          deadline: constants.MaxUint256,
+          amountIn: parseEther('10'),
+          amountOutMinimum: _25k,
+          sqrtPriceLimitX96: 0
+      })
+      console.log('DAI added to ' + signers[i].address)
+    }
+    console.log('Done')
 
   })
 

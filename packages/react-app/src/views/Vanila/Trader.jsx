@@ -15,6 +15,7 @@ import { useUserAddress } from 'eth-hooks';
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { Web3Provider } from "@ethersproject/providers";
+import { Contract } from '../../components';
 
 // TODO egill - review if neccesary
 const { ethers } = require("ethers");
@@ -50,6 +51,7 @@ const targetNetwork = NETWORKS.localhost;
 const localProviderUrl = targetNetwork.rpcUrl;
 const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 const localProvider = new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv);
+const blockExplorer = targetNetwork.blockExplorer;
 
 const UserAccount = () => {
   const [injectedProvider, setInjectedProvider] = useState();
@@ -78,7 +80,16 @@ const UserAccount = () => {
   }, [loadWeb3Modal]);
 
   return (
-    <span>{address}</span>
+    <>
+      {JSON.stringify(blockExplorer)}
+      <Contract 
+        name={"UserAccount"}
+        signer={userSigner}
+        provider={localProvider}
+        address={address}
+        blockExplorer={blockExplorer}
+        />
+    </>
   )
 
 }

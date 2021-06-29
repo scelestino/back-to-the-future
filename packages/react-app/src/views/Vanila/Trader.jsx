@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import _Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import _TableCell from '@material-ui/core/TableCell';
@@ -9,8 +9,12 @@ import Paper from '@material-ui/core/Paper';
 import styled from 'styled-components'
 import { usePositions } from '../../services';
 import { Button } from '@material-ui/core'
-import { NETWORKS } from "../../constants";
-import { useUserSigner } from '../../hooks'
+import { NETWORKS, INFURA_ID } from "../../constants";
+import { useUserProvider, useUserSigner } from '../../hooks'
+import { useUserAddress } from 'eth-hooks';
+import Web3Modal from "web3modal";
+import WalletConnectProvider from "@walletconnect/web3-provider";
+import { Web3Provider } from "@ethersproject/providers";
 
 // TODO egill - review if neccesary
 const { ethers } = require("ethers");
@@ -29,13 +33,26 @@ const Table = styled(_Table)`
 
 const TableCell = styled(_TableCell)``
 
+const web3Modal = new Web3Modal({
+  // network: "mainnet", // optional
+  cacheProvider: true, // optional
+  providerOptions: {
+    walletconnect: {
+      package: WalletConnectProvider, // required
+      options: {
+        infuraId: INFURA_ID,
+      },
+    },
+  },
+});
+
 const targetNetwork = NETWORKS.localhost;
 const localProviderUrl = targetNetwork.rpcUrl;
 const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 const localProvider = new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv);
 
 const UserAccount = () => {
-  const [injectedProvider] = useState();
+  const [injectedProvider, setInjectedProvider] = useState();
   const userSigner = useUserSigner(injectedProvider, localProvider);
   const [address, setAddress] = useState();
 
@@ -48,6 +65,17 @@ const UserAccount = () => {
     }
     getAddress();
   }, [userSigner]);
+
+  const loadWeb3Modal = useCallback(async () => {
+    const provider = await web3Modal.connect();
+    setInjectedProvider(new Web3Provider(provider));
+  }, [setInjectedProvider]);
+
+  useEffect(() => {
+    if (web3Modal.cachedProvider) {
+      loadWeb3Modal();
+    }
+  }, [loadWeb3Modal]);
 
   return (
     <span>{address}</span>

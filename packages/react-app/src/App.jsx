@@ -268,6 +268,8 @@ function App() {
     );
   }
 
+  console.log('address', address)
+
   return (
     <div className="App">
       {/* ✏️ Edit the header and change the title to your project name */}

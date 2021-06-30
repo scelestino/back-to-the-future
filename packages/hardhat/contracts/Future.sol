@@ -110,7 +110,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     }
 
     function bidQty() external override view returns (uint qty) {
-        qty = base.available();
+        qty = base.available().div(PRBMathUD60x18.SCALE - base.borrowingRate());
     }
 
     function askRate() public override view returns (uint256 rate) {

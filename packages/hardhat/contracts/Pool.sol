@@ -3,8 +3,8 @@ pragma solidity >=0.6.0 <0.9.0;
 
 import "hardhat/console.sol";
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import "prb-math/contracts/PRBMath.sol";
 
 import "./interfaces/IPool.sol";
 import "./libraries/DSMath.sol";
@@ -44,7 +44,7 @@ contract Pool is IPool {
         token = _token;
         tokenWAD = 10 ** _token.decimals();
         OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
-        EXCESS_UTILIZATION_RATE = DSMath.RAY.sub(_optimalUtilizationRate);
+        EXCESS_UTILIZATION_RATE = DSMath.RAY - _optimalUtilizationRate;
         baseBorrowRate = _baseBorrowRate;
         slope1 = _slope1;
         slope2 = _slope2;
@@ -55,12 +55,12 @@ contract Pool is IPool {
         require(amount > 0, "Pool: deposit amount should be greater than zero");
 
         share = totalShare > 0
-        ? FullMath.mulDiv(amount, totalShare, balance)
-        : amount.mul(10 ** (18 - token.decimals()));
+        ? PRBMath.mulDiv(amount, totalShare, balance)
+        : amount * (10 ** (18 - token.decimals()));
 
-        balance = balance.add(amount);
-        totalShare = totalShare.add(share);
-        shares[msg.sender] = shares[msg.sender].add(share);
+        balance = balance + amount;
+        totalShare = totalShare + share;
+        shares[msg.sender] = shares[msg.sender] + share;
 
         token.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -71,13 +71,13 @@ contract Pool is IPool {
         require(amount > 0, "Pool: withdraw amount should be greater than zero");
         require(balance >= amount, "Pool: withdraw amount greater than balance");
 
-        uint256 share = FullMath.mulDiv(totalShare, amount, balance);
+        uint256 share = PRBMath.mulDiv(totalShare, amount, balance);
 
         require(shares[msg.sender] >= share, "Pool: withdraw amount greater than sender balance");
 
-        balance = balance.sub(amount);
-        totalShare = totalShare.sub(share);
-        shares[msg.sender] = shares[msg.sender].sub(share);
+        balance = balance - amount;
+        totalShare = totalShare - share;
+        shares[msg.sender] = shares[msg.sender] - share;
 
         token.safeTransfer(msg.sender, amount);
 
@@ -85,13 +85,13 @@ contract Pool is IPool {
 
     function balanceOf(address owner) external view returns (uint) {
         return totalShare > 0
-        ? FullMath.mulDiv(balance, shares[owner], totalShare)
+        ? PRBMath.mulDiv(balance, shares[owner], totalShare)
         : 0;
     }
 
     function shareOf(address owner) external view returns (uint) {
         return totalShare > 0
-        ? FullMath.mulDiv(100, shares[owner], totalShare)
+        ? PRBMath.mulDiv(100, shares[owner], totalShare)
         : 0;
     }
 
@@ -100,7 +100,7 @@ contract Pool is IPool {
 
         require(amount > 0, "Pool: borrow amount should be greater than zero");
 
-        borrowed = borrowed.add(amount);
+        borrowed = borrowed + amount;
         token.safeTransfer(recipient, amount);
 
     }
@@ -112,23 +112,23 @@ contract Pool is IPool {
         require(interest > 0, "Pool: repay interest should be greater than zero");
         require(borrowed >= amount, "Pool: repay amount should be equals or lower than borrowed");
 
-        balance = balance.add(interest);
-        borrowed = borrowed.sub(amount);
+        balance = balance + interest;
+        borrowed = borrowed - amount;
 
     }
 
     function available() view external override returns (uint qty) {
-        qty = balance.sub(borrowed);
+        qty = balance - borrowed;
     }
 
     function borrowingRate() view external override returns (uint rate) {
         uint utilizationRate = borrowed == 0 ? 0 : borrowed.rdiv(balance);
 
         if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-            uint256 excessUtilizationRateRatio = utilizationRate.sub(OPTIMAL_UTILIZATION_RATE).rdiv(EXCESS_UTILIZATION_RATE);
-            rate = baseBorrowRate.add(slope1).add(slope2.rmul(excessUtilizationRateRatio));
+            uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).rdiv(EXCESS_UTILIZATION_RATE);
+            rate = baseBorrowRate + slope1 + slope2.rmul(excessUtilizationRateRatio);
         } else {
-            rate = baseBorrowRate.add(utilizationRate.rmul(slope1).rdiv(OPTIMAL_UTILIZATION_RATE));
+            rate = baseBorrowRate + utilizationRate.rmul(slope1).rdiv(OPTIMAL_UTILIZATION_RATE);
         }
     }
 }

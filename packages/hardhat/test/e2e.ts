@@ -14,7 +14,7 @@ import {
     IWETH9__factory,
     Pool,
     Pool__factory,
-    TestSwapRouter__factory,
+    ISwapRouter__factory,
     UserAccount,
     UserAccount__factory
 } from '../typechain'
@@ -70,7 +70,7 @@ describe("E2E", async () => {
         expect(await weth.balanceOf(wethPool.address)).to.be.eq(parseEther("10"))
 
         usdt = IERC20__factory.connect(usdtAddress, deployer)
-        const swapRouter = TestSwapRouter__factory.connect(uniswapRouter, deployer)
+        const swapRouter = ISwapRouter__factory.connect(uniswapRouter, deployer)
 
         // Buy ~25k USDT and lend it to the USDT pool
         await weth.connect(lender).approve(swapRouter.address, constants.MaxUint256)

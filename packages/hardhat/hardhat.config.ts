@@ -1,5 +1,4 @@
 import {HardhatUserConfig} from 'hardhat/types'
-import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
 import {config as dotEnvConfig} from 'dotenv'
 import 'hardhat-watcher'
 
@@ -113,6 +112,15 @@ const config: HardhatUserConfig = {
     },
     solidity: {
         compilers: [
+            {
+                version: "0.8.4",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200
+                    }
+                }
+            },
             {
                 version: "0.7.6",
                 settings: {

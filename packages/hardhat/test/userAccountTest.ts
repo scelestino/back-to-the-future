@@ -140,7 +140,7 @@ describe("User Accounts", async () => {
 
         it("should always keep a consistent state", async () => {
             await lusd.setBalance(trader1.address, parseUnits("250000"))
-            await lusd.connect(trader1).approve(userAccount.address, BigNumber.from(2).pow(255))
+            await lusd.connect(trader1).approve(userAccount.address, constants.MaxUint256)
             const traderAccount = userAccount.connect(trader1)
 
             const bnArb = fc.bigIntN(80).map(BigNumber.from)
@@ -180,8 +180,6 @@ describe("User Accounts", async () => {
     })
 
     describe("Account positions", async () => {
-        const expiry = new Date();
-        expiry.setMonth(expiry.getMonth() + 3);
         const price = parseUnits("2500");
 
         [[parseEther("2"), parseUnits("-5000")],
@@ -190,7 +188,7 @@ describe("User Accounts", async () => {
             it(`should only accept placing orders if the purchasing power is enough qty=${quantity}`, async () => {
                 const traderAccount = userAccount.connect(trader1)
                 await traderAccount.deposit(lusd.address, parseUnits("2000"));
-                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address);
                 await future.deployed()
                 expect(future.address).to.properAddress
                 await future.setSpot(price)
@@ -239,7 +237,7 @@ describe("User Accounts", async () => {
                 const traderAccount = userAccount.connect(trader1)
                 const deposit = parseUnits("1100");
                 await traderAccount.deposit(lusd.address, deposit);
-                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address);
                 await future.deployed()
                 expect(future.address).to.properAddress
                 await future.setBidRate(parseUnits("2400"))
@@ -294,7 +292,7 @@ describe("User Accounts", async () => {
                 const traderAccount = userAccount.connect(trader1)
                 const deposit = parseUnits("1100");
                 await traderAccount.deposit(lusd.address, deposit);
-                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address);
                 await future.deployed()
                 expect(future.address).to.properAddress
                 await future.setBidRate(parseUnits("2400"))
@@ -342,7 +340,7 @@ describe("User Accounts", async () => {
                 const traderAccount = userAccount.connect(trader1)
                 const deposit = parseUnits("1100");
                 await traderAccount.deposit(lusd.address, deposit);
-                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address);
                 await future.deployed()
                 expect(future.address).to.properAddress
                 await future.setBidRate(parseUnits("2400"))
@@ -396,7 +394,7 @@ describe("User Accounts", async () => {
                 const traderAccount = userAccount.connect(trader1)
                 const deposit = parseUnits("2000");
                 await traderAccount.deposit(lusd.address, deposit);
-                const future = await futureFactory.deploy(wethPool.address, lusdPool.address, expiry.getMilliseconds());
+                const future = await futureFactory.deploy(wethPool.address, lusdPool.address);
                 await future.deployed()
                 expect(future.address).to.properAddress
                 await future.setBidRate(parseUnits("2400"))

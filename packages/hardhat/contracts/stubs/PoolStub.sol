@@ -3,7 +3,6 @@ pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
 import "../interfaces/IPool.sol";
 
 contract PoolStub is IPool {
@@ -23,11 +22,11 @@ contract PoolStub is IPool {
 
     }
 
-    function available() view external override returns (uint qty) {
+    function available() pure external override returns (uint qty) {
         qty = 0;
     }
 
-    function borrowingRate() view external override returns (uint rate) {
+    function borrowingRate() pure external override returns (uint rate) {
         rate = 0;
     }
 }

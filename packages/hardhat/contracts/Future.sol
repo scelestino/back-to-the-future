@@ -4,22 +4,14 @@ pragma abicoder v2;
 
 import "hardhat/console.sol";
 
-import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
-import '@uniswap/v3-core/contracts/libraries/SqrtPriceMath.sol';
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
+import "prb-math/contracts/PRBMath.sol";
 
-import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
-import '@uniswap/v3-periphery/contracts/libraries/CallbackValidation.sol';
-
-import '@openzeppelin/contracts/math/SafeMath.sol';
+import './dependencies/Uniswap.sol';
 
 import "./interfaces/IFuture.sol";
 import "./interfaces/IPool.sol";
 
 contract Future is IFuture, IUniswapV3SwapCallback {
-    using SafeMath for uint256;
-
     IPool immutable public override base;
     IPool immutable public override quote;
     IUniswapV3Pool immutable pool;
@@ -32,7 +24,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external override {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata /*_data*/) external override {
         require(msg.sender == address(pool), "Caller was not the expected UNI pool");
         require(amount0Delta > 0 || amount1Delta > 0);
 
@@ -44,7 +36,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         }
     }
 
-    function long(int quantity, uint price) external override returns (int amountReceived, int amountPaid) {
+    function long(int quantity, uint /*price*/) external override returns (int amountReceived, int amountPaid) {
         // bool zeroForOne = tokenIn < tokenOut;
         bool zeroForOne = address(quote.token()) < address(base.token());
 
@@ -61,7 +53,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         require(amountReceived == quantity, "Couldn't get the required amount");
     }
 
-    function short(int quantity, uint price) external override returns (int amountPaid, int amountReceived) {
+    function short(int quantity, uint /*price*/) external override returns (int amountPaid, int amountReceived) {
         //TODO remove interest from price and pass slippage limit to UNI
 
         // bool zeroForOne = tokenIn < tokenOut;
@@ -82,16 +74,16 @@ contract Future is IFuture, IUniswapV3SwapCallback {
 
     function spot() public view returns (uint256 rate) {
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-        rate = uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
+        rate = (uint(sqrtPriceX96) * uint(sqrtPriceX96) * 1e18) >> (96 * 2);
         if (address(base.token()) == poolKey.token1) {
-            rate = FullMath.mulDiv(base.tokenWAD(), quote.tokenWAD(), rate);
+            rate = PRBMath.mulDiv(base.tokenWAD(), quote.tokenWAD(), rate);
         }
     }
 
     function bidRate() external override view returns (uint256 rate) {
         rate = spot();
         //TODO hardcoded to 2.15%, should come from the pricing formula using the pool rates
-        rate = rate - FullMath.mulDiv(215, rate, 10000);
+        rate = rate - PRBMath.mulDiv(215, rate, 10000);
     }
 
     function bidQty() external override view returns (uint qty) {
@@ -101,10 +93,10 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     function askRate() public override view returns (uint256 rate) {
         rate = spot();
         //TODO hardcoded to 3.25%, should come from the pricing formula using the pool rates
-        rate = rate + FullMath.mulDiv(325, rate, 10000);
+        rate = rate + PRBMath.mulDiv(325, rate, 10000);
     }
 
     function askQty() external override view returns (uint qty) {
-        qty = FullMath.mulDiv(quote.available(), base.tokenWAD(), askRate());
+        qty = PRBMath.mulDiv(quote.available(), base.tokenWAD(), askRate());
     }
 }

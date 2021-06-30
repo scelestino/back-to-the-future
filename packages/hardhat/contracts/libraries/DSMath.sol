@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: GPL-3
 pragma solidity >=0.6.0 <0.9.0;
 
 /// math.sol -- mixin for inline numerical wizardry

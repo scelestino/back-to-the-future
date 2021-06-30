@@ -4,14 +4,12 @@ pragma abicoder v2;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
-import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import "prb-math/contracts/PRBMath.sol";
+
 import "./interfaces/IFuture.sol";
 
 contract UserAccount {
-    using LowGasSafeMath for uint256;
-    using LowGasSafeMath for int256;
     using SafeERC20 for IERC20;
 
     mapping(address => mapping(address => int256)) wallets;
@@ -24,7 +22,7 @@ contract UserAccount {
         require(amount > 0, "UserAccount: can't deposit a negative amount");
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), uint(amount));
-        wallets[msg.sender][token] = wallets[msg.sender][token].add(amount);
+        wallets[msg.sender][token] = wallets[msg.sender][token] + amount;
     }
 
     function withdraw(address token, int256 amount) external {
@@ -34,7 +32,7 @@ contract UserAccount {
         require(balance >= amount, "UserAccount: not enough balance");
 
         IERC20(token).safeTransfer(msg.sender, uint(amount));
-        wallets[msg.sender][token] = balance.sub(amount);
+        wallets[msg.sender][token] = balance - amount;
     }
 
     function noFills(address trader) external view returns (uint256) {
@@ -59,10 +57,10 @@ contract UserAccount {
                 //consider the rate that it'd paid to close the fill, aka the other side of the market
                 int marketRate = int(fill.openQuantity > 0 ? fill.future.bidRate() : fill.future.askRate());
                 // TODO how safe are this math operations?
-                margin += fill.openQuantity * marketRate / (fill.leverage * int(fill.future.base().tokenWAD()));
+                margin += fill.openQuantity * marketRate / int(fill.leverage * fill.future.base().tokenWAD());
             }
         }
-        pp = wallet(trader, token).sub(int(abs(margin)));
+        pp = wallet(trader, token) - int(abs(margin));
     }
 
     function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage) external {
@@ -73,19 +71,19 @@ contract UserAccount {
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 
-        Position storage position = positions[msg.sender][address(future)];
+        Position storage p = positions[msg.sender][address(future)];
 
-        if (abs(position.quantity + _quantity) > abs(position.quantity)) {
-            uint256 requiredMargin = FullMath.mulDivRoundingUp(abs(_quantity), price, leverage * future.base().tokenWAD());
+        if (abs(p.quantity + _quantity) > abs(p.quantity)) {
+            uint256 requiredMargin = PRBMath.mulDiv(abs(_quantity), price, leverage * future.base().tokenWAD());
             require(int(requiredMargin) <= purchasingPower(msg.sender, address(future.quote().token())), "UserAccount: not enough purchasing power");
         }
 
         (int quantity, int cost) = _quantity > 0 ? future.long(_quantity, price) : future.short(_quantity, price);
 
-        settle(future, position, Fill(future, quantity, cost, leverage, 0, 0));
+        settle(future, p, Fill(future, quantity, cost, leverage, 0, 0));
     }
 
-    function settle(IFuture future, Position storage position, Fill memory rightFill) internal {
+    function settle(IFuture future, Position storage p, Fill memory rightFill) internal {
         Fill[] storage traderFills = fills[msg.sender];
         for (uint i = 0; i < traderFills.length; i++) {
             if (traderFills[i].future == future && signum(traderFills[i].openQuantity) != signum(rightFill.openQuantity)) {
@@ -93,41 +91,41 @@ contract UserAccount {
                 if (abs(rightFill.openQuantity) >= abs(traderFills[i].openQuantity)) {
                     Fill memory leftFill = traderFills[i];
                     int pnl = leftFill.openCost + rightFill.openCost;
-                    wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())].add(pnl);
+                    wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())] + pnl;
                     // TODO what to do with the PnL???
 
-                    int closeCost = signum(leftFill.openCost) * int(FullMath.mulDiv(abs(leftFill.openQuantity), abs(rightFill.openCost), abs(rightFill.openQuantity)));
+                    int closeCost = signum(leftFill.openCost) * int(PRBMath.mulDiv(abs(leftFill.openQuantity), abs(rightFill.openCost), abs(rightFill.openQuantity)));
                     rightFill.openQuantity += leftFill.openQuantity;
                     rightFill.openCost += closeCost;
 
-                    position.quantity -= leftFill.openQuantity;
-                    position.cost -= leftFill.openCost;
+                    p.quantity -= leftFill.openQuantity;
+                    p.cost -= leftFill.openCost;
 
                     removeFill(traderFills, i);
-                    i--;
+                    if (i > 0) i--;
                 } else {
                     // rightFill partially closes leftFill
                     Fill storage leftFill = traderFills[i];
-                    int closeCost = signum(rightFill.openCost) * int(FullMath.mulDiv(abs(rightFill.openQuantity), abs(leftFill.openCost), abs(leftFill.openQuantity)));
+                    int closeCost = signum(rightFill.openCost) * int(PRBMath.mulDiv(abs(rightFill.openQuantity), abs(leftFill.openCost), abs(leftFill.openQuantity)));
                     leftFill.openCost += closeCost;
                     leftFill.openQuantity += rightFill.openQuantity;
                     leftFill.closeCost += rightFill.openCost;
                     leftFill.closeQuantity += rightFill.openQuantity;
 
                     int pnl = rightFill.openCost - closeCost;
-                    wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())].add(pnl);
+                    wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())] + pnl;
                     // TODO what to do with the PnL???
 
-                    position.quantity += rightFill.openQuantity;
-                    position.cost += closeCost;
+                    p.quantity += rightFill.openQuantity;
+                    p.cost += closeCost;
                     return;
                 }
             }
         }
         if (rightFill.openQuantity != 0) {
             fills[msg.sender].push(rightFill);
-            position.quantity += rightFill.openQuantity;
-            position.cost += rightFill.openCost;
+            p.quantity += rightFill.openQuantity;
+            p.cost += rightFill.openCost;
         }
     }
 

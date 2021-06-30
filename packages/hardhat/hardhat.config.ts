@@ -29,7 +29,7 @@ dotEnvConfig()
 //
 // Select the network you want to deploy to here:
 //
-const defaultNetwork: string = "hardhat";
+const defaultNetwork: string = "localhost";
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
 
@@ -61,10 +61,10 @@ const config: HardhatUserConfig = {
         },
         localhost: {
             url: "http://localhost:8545",
-            /*
-              notice no mnemonic here? it will just use account 0 of the hardhat node to deploy
-              (you can put in a mnemonic here to set the deployer locally)
-            */
+            forking: {
+                url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+                blockNumber: 12628614
+            }
         },
         rinkeby: {
             url: "https://rinkeby.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", //<---- YOUR INFURA ID! (or it won't work)

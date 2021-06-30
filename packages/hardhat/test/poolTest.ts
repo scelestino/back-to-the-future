@@ -303,7 +303,7 @@ describe("Pool", async () => {
             })
         ]);
 
-        it.only(`should quote a rate for a given quantity`, async () => {
+        it(`should quote a rate for a given quantity`, async () => {
             sut = await poolFactory.deploy(erc20.address, parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
             await sut.deployed()
             expect(sut.address).to.properAddress

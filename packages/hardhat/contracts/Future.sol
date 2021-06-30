@@ -96,8 +96,12 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     }
 
     function bidRate() external override view returns (uint256 rate) {
+        rate = quoteBidRate(0);
+    }
+
+    function quoteBidRate(uint quantity) public override view returns (uint256 rate) {
         rate = spot();
-        uint borrowingRate = base.borrowingRate();
+        uint borrowingRate = base.borrowingRateAfterLoan(quantity);
         if (borrowingRate != 0) {
             uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
             int adjustedBorrowingRate = - int(remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD));
@@ -110,8 +114,12 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     }
 
     function askRate() public override view returns (uint256 rate) {
+        rate = quoteAskRate(0);
+    }
+
+    function quoteAskRate(uint quantity) public override view returns (uint256 rate) {
         rate = spot();
-        uint borrowingRate = quote.borrowingRate();
+        uint borrowingRate = quote.borrowingRateAfterLoan(quantity.mul(rate));
         if (borrowingRate != 0) {
             uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
             uint adjustedBorrowingRate = remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD);

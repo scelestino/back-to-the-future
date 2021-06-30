@@ -52,12 +52,20 @@ contract FutureStub is IFuture {
         return _bidRate > 0 ? _bidRate : spot - (bidInterestRate * spot / 10000);
     }
 
+    function quoteBidRate(uint) external override view returns (uint256 rate){
+        rate = bidRate();
+    }
+
     function bidQty() external override view returns (uint qty) {
         qty = base.available();
     }
 
     function askRate() public override view returns (uint256) {
         return _askRate > 0 ? _askRate : spot + (askInterestRate * spot / 10000);
+    }
+
+    function quoteAskRate(uint) external override view returns (uint256 rate) {
+        rate = askRate();
     }
 
     function askQty() external override view returns (uint qty) {

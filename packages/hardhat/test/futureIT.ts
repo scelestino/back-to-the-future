@@ -97,7 +97,7 @@ describe("Futures", async () => {
         describe("Futures can be priced", async () => {
             it("can compute the prices and liquidity", async () => {
                 await wethPool.borrow(parseUnits("1"), uniswapRouter)
-                expect(await wethPool.borrowingRate()).to.be.eq(parseUnits("0.012307692307692308"))
+                expect(await wethPool.borrowingRate()).to.be.eq(parseUnits("0.012307692307692307"))
                 await daiPool.borrow(parseUnits("6250"), uniswapRouter)
                 expect(await daiPool.borrowingRate()).to.be.eq(parseUnits("0.0125"))
 
@@ -204,7 +204,7 @@ describe("Futures", async () => {
         describe("Futures can be priced", async () => {
             it("can compute the prices and liquidity", async () => {
                 await wethPool.borrow(parseUnits("1"), uniswapRouter)
-                expect(await wethPool.borrowingRate()).to.be.eq(parseUnits("0.012307692307692308"))
+                expect(await wethPool.borrowingRate()).to.be.eq(parseUnits("0.012307692307692307"))
                 await usdtPool.borrow(parseUnits("6250", 6), uniswapRouter)
                 expect(await usdtPool.borrowingRate()).to.be.eq(parseUnits("0.0125"))
 

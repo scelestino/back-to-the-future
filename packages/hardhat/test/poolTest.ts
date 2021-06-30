@@ -279,8 +279,8 @@ describe("Pool", async () => {
     describe("Borrowing rate", async () => {
 
         [
-            [parseUnits("100"), parseUnits("10"), parseUnits("0.012307692307692308"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
-            [parseUnits("100"), parseUnits("10"), parseUnits("0.112307692307692308"), parseUnits("0.65"), parseUnits("0.1"), parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.012307692307692307"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.112307692307692307"), parseUnits("0.65"), parseUnits("0.1"), parseUnits("0.08"), parseUnits("1")],
             [parseUnits("100"), parseUnits("65"), parseUnits("0.08"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
             [parseUnits("100"), parseUnits("80"), parseUnits("0.508571428571428571"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
             [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0125"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],

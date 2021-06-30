@@ -5,13 +5,13 @@ import "hardhat/console.sol";
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import "prb-math/contracts/PRBMath.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./interfaces/IPool.sol";
-import "./libraries/DSMath.sol";
 
 contract Pool is IPool {
     using SafeERC20 for ERC20;
-    using DSMath for uint256;
+    using PRBMathUD60x18 for uint256;
 
     // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
     uint256 public immutable OPTIMAL_UTILIZATION_RATE;
@@ -44,7 +44,7 @@ contract Pool is IPool {
         token = _token;
         tokenWAD = 10 ** _token.decimals();
         OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
-        EXCESS_UTILIZATION_RATE = DSMath.WAD - _optimalUtilizationRate;
+        EXCESS_UTILIZATION_RATE = PRBMathUD60x18.SCALE - _optimalUtilizationRate;
         baseBorrowRate = _baseBorrowRate;
         slope1 = _slope1;
         slope2 = _slope2;
@@ -122,13 +122,13 @@ contract Pool is IPool {
     }
 
     function borrowingRate() view external override returns (uint rate) {
-        uint utilizationRate = borrowed == 0 ? 0 : borrowed.wdiv(balance);
+        uint utilizationRate = borrowed == 0 ? 0 : borrowed.div(balance);
 
         if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-            uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).wdiv(EXCESS_UTILIZATION_RATE);
-            rate = baseBorrowRate + slope1 + slope2.wmul(excessUtilizationRateRatio);
+            uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).div(EXCESS_UTILIZATION_RATE);
+            rate = baseBorrowRate + slope1 + slope2.mul(excessUtilizationRateRatio);
         } else {
-            rate = baseBorrowRate + utilizationRate.wmul(slope1).wdiv(OPTIMAL_UTILIZATION_RATE);
+            rate = baseBorrowRate + utilizationRate.mul(slope1).div(OPTIMAL_UTILIZATION_RATE);
         }
     }
 }

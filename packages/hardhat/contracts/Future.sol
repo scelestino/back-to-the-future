@@ -11,7 +11,6 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import './dependencies/Uniswap.sol';
 
 import "./libraries/DateTimeLibrary.sol";
-import "./libraries/DSMath.sol";
 
 import "./interfaces/IFuture.sol";
 import "./interfaces/IPool.sol";
@@ -90,7 +89,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
 
     function spot() public view returns (uint256 rate) {
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-        rate = (uint(sqrtPriceX96) * uint(sqrtPriceX96) * 1e18) >> (96 * 2);
+        rate = (uint(sqrtPriceX96) * uint(sqrtPriceX96) * PRBMathUD60x18.SCALE) >> (96 * 2);
         if (address(base.token()) == poolKey.token1) {
             rate = PRBMath.mulDiv(base.tokenWAD(), quote.tokenWAD(), rate);
         }
@@ -100,7 +99,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         rate = spot();
         uint borrowingRate = base.borrowingRate();
         if (borrowingRate != 0) {
-            uint remainingDays = expiry.daysFromNow() * 1e18;
+            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
             int adjustedBorrowingRate = - int(remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD));
             rate = rate.mul(uint(adjustedBorrowingRate.exp()));
         }
@@ -114,7 +113,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         rate = spot();
         uint borrowingRate = quote.borrowingRate();
         if (borrowingRate != 0) {
-            uint remainingDays = expiry.daysFromNow() * 1e18;
+            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
             uint adjustedBorrowingRate = remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD);
             rate = rate.mul(adjustedBorrowingRate.exp());
         }

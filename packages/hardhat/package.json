@@ -45,7 +45,6 @@
   },
   "scripts": {
     "chain": "hardhat node",
-    "fork": "hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/sfNyMHuPAFaySUdhWbAVMHmzSrslketU --fork-block-number 12628614",
     "test": "hardhat test --network hardhat",
     "test:watch": "npx hardhat watch test --network hardhat",
     "compile:watch": "npx hardhat watch compilation",
@@ -59,6 +58,6 @@
     "send": "hardhat send",
     "generate": "hardhat generate",
     "account": "hardhat account",
-    "fund": "hardhat fund --network localhost"
+    "fund": "hardhat fund"
   }
 }

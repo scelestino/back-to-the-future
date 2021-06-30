@@ -302,5 +302,18 @@ describe("Pool", async () => {
                 expect(await sut.borrowingRate()).to.be.eq(borrowingRate)
             })
         ]);
+
+        it.only(`should quote a rate for a given quantity`, async () => {
+            sut = await poolFactory.deploy(erc20.address, parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
+            await sut.deployed()
+            expect(sut.address).to.properAddress
+            await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+
+            await sut.connect(owner).deposit(parseUnits("100"))
+
+            expect(await sut.borrowingRateAfterLoan(parseUnits("10"))).to.be.eq(parseUnits("0.012307692307692307"))
+            expect(await sut.borrowingRateAfterLoan(parseUnits("65"))).to.be.eq(parseUnits("0.08"))
+            expect(await sut.borrowingRateAfterLoan(parseUnits("80"))).to.be.eq(parseUnits("0.508571428571428571"))
+        })
     })
 })

@@ -15,4 +15,6 @@ interface IPool {
     function available() view external returns (uint qty);
 
     function borrowingRate() view external returns (uint rate);
+
+    function borrowingRateAfterLoan(uint amount) view external returns (uint rate);
 }

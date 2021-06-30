@@ -27,7 +27,7 @@ contract Pool is IPool {
 
 
     ERC20 public override token;
-    uint public override tokenWAD;
+    uint public override tokenScale;
 
     uint256 public balance = 0;
     uint256 public borrowed = 0;
@@ -42,7 +42,7 @@ contract Pool is IPool {
         uint256 _slope2
     ) {
         token = _token;
-        tokenWAD = 10 ** _token.decimals();
+        tokenScale = 10 ** _token.decimals();
         OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
         EXCESS_UTILIZATION_RATE = PRBMathUD60x18.SCALE - _optimalUtilizationRate;
         baseBorrowRate = _baseBorrowRate;

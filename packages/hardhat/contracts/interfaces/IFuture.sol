@@ -9,9 +9,9 @@ interface IFuture {
 
     function quote() external view returns (IPool);
 
-    function long(int quantity, uint price) external returns (int amountReceived, int amountPaid);
+    function long(uint quantity, uint price) external returns (int amountReceived, int amountPaid);
 
-    function short(int quantity, uint price) external returns (int amountPaid, int amountReceived);
+    function short(uint quantity, uint price) external returns (int amountPaid, int amountReceived);
 
     function bidRate() external view returns (uint256 rate);
 

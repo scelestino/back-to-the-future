@@ -122,10 +122,11 @@ describe("Futures", async () => {
 
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
+                await daiPool.borrow(parseUnits("6250", 6), uniswapRouter)
                 const initialDaiHoldings = await dai.balanceOf(daiPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = parseUnits("2531");
+                const price = parseUnits("2543");
                 const quantity = utils.parseEther("1");
 
                 await future.long(quantity, price)
@@ -135,15 +136,16 @@ describe("Futures", async () => {
             })
 
             it("can go short", async () => {
+                await wethPool.borrow(parseUnits("1"), uniswapRouter)
                 const initialDaiHoldings = await dai.balanceOf(daiPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = parseUnits("2525");
-                const quantity = utils.parseEther("-1");
+                const price = parseUnits("2496");
+                const quantity = utils.parseEther("1");
 
                 await future.short(quantity, price)
 
-                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                expect(await weth.balanceOf(wethPool.address)).to.be.gt(initialWethHoldings.sub(quantity))
                 expect(await dai.balanceOf(daiPool.address)).to.be.gt(initialDaiHoldings)
             })
         })
@@ -240,10 +242,11 @@ describe("Futures", async () => {
 
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
+                await usdtPool.borrow(parseUnits("6250", 6), uniswapRouter)
                 const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = parseUnits("2537", 6);
+                const price = parseUnits("2582", 6);
                 const quantity = utils.parseEther("1");
 
                 await future.long(quantity, price)
@@ -253,15 +256,16 @@ describe("Futures", async () => {
             })
 
             it("can go short", async () => {
+                await wethPool.borrow(parseUnits("1"), uniswapRouter)
                 const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = parseUnits("2533", 6);
-                const quantity = utils.parseEther("-1");
+                const price = parseUnits("2500", 6);
+                const quantity = utils.parseEther("1");
 
                 await future.short(quantity, price)
 
-                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                expect(await weth.balanceOf(wethPool.address)).to.be.gt(initialWethHoldings.sub(quantity))
                 expect(await usdt.balanceOf(usdtPool.address)).to.be.gt(initialUsdtHoldings)
             })
         })

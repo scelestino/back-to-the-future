@@ -40,12 +40,12 @@ contract FutureStub is IFuture {
         _askRate = askRate_;
     }
 
-    function long(int quantity, uint /*price*/) external view override returns (int amountReceived, int amountPaid) {
-        return (quantity, - quantity * int(askRate()) / int(10 ** base.token().decimals()));
+    function long(uint quantity, uint /*price*/) external view override returns (int amountReceived, int amountPaid) {
+        return (int(quantity), - int(quantity * askRate()) / int(10 ** base.token().decimals()));
     }
 
-    function short(int quantity, uint /*price*/) external view override returns (int amountPaid, int amountReceived) {
-        return (quantity, - quantity * int(bidRate()) / int(10 ** base.token().decimals()));
+    function short(uint quantity, uint /*price*/) external view override returns (int amountPaid, int amountReceived) {
+        return (-int(quantity), - int(quantity * bidRate()) / int(10 ** base.token().decimals()));
     }
 
     function bidRate() public override view returns (uint256) {

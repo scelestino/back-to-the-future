@@ -10,11 +10,11 @@ import {
     Future__factory,
     IERC20,
     IERC20__factory,
+    ISwapRouter__factory,
     IWETH9,
     IWETH9__factory,
     Pool,
     Pool__factory,
-    ISwapRouter__factory,
     UserAccount,
     UserAccount__factory
 } from '../typechain'
@@ -63,7 +63,7 @@ describe("E2E", async () => {
         weth = IWETH9__factory.connect(wethAddress, deployer)
         await weth.connect(lender).deposit({value: parseEther("100")})
         expect(await weth.balanceOf(lender.address)).to.be.eq(parseEther("100"))
-        wethPool = await poolFactory.deploy(weth.address,0,0,0,0)
+        wethPool = await poolFactory.deploy(weth.address, parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
         await wethPool.deployed()
         await weth.connect(lender).approve(wethPool.address, constants.MaxUint256)
         await wethPool.connect(lender).deposit(parseUnits("10"))
@@ -86,7 +86,7 @@ describe("E2E", async () => {
             sqrtPriceLimitX96: 0
         })
         expect(await usdt.balanceOf(lender.address)).to.be.gte(_25k)
-        usdtPool = await poolFactory.deploy(usdt.address,0,0,0,0)
+        usdtPool = await poolFactory.deploy(usdt.address, parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75"))
         await usdtPool.deployed()
         await usdt.connect(lender).approve(usdtPool.address, constants.MaxUint256)
         await usdtPool.connect(lender).deposit(_25k)
@@ -123,8 +123,8 @@ describe("E2E", async () => {
     describe("Users can trade", async () => {
 
         [
-            [parseEther("2"), parseUnits("-5072.628169", 6), parseUnits("1007.532638", 6)],
-            [parseEther("-2"), parseUnits("5065.001132", 6), parseUnits("953.817850", 6)]
+            [parseEther("2"), parseUnits("-5072.628169", 6), parseUnits("985.725742", 6)],
+            [parseEther("-2"), parseUnits("5065.001132", 6), parseUnits("986.748523", 6)]
         ]
             .forEach(([quantity, expectedCost, purchasingPower]) => {
                 const isLong = quantity.gt(0);
@@ -138,8 +138,7 @@ describe("E2E", async () => {
                     await traderAccount.deposit(usdt.address, deposit);
 
                     const futurePrice = await (isLong ? future.askRate() : future.bidRate())
-                    const expectedFuturePrice = isLong ? parseUnits("2616.774573", 6) : parseUnits("2479.916631", 6)
-                    expect(futurePrice).to.be.eq(expectedFuturePrice)
+                    expect(futurePrice).to.be.eq(parseUnits("2534.406367", 6))
 
                     expect(await traderAccount.purchasingPower(trader1.address, usdt.address)).to.be.eq(deposit)
                     await traderAccount.placeOrder(future.address, quantity, futurePrice, 5)
@@ -160,7 +159,7 @@ describe("E2E", async () => {
                     expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
 
                     const futurePrice2 = await (isLong ? future.askRate() : future.bidRate())
-                    const expectedFuturePrice2 = isLong ? parseUnits("2618.095430", 6) : parseUnits("2478.666427", 6)
+                    const expectedFuturePrice2 = isLong ? parseUnits("2537.448258", 6) : parseUnits("2528.861474", 6)
                     expect(futurePrice2).to.be.eq(expectedFuturePrice2)
 
                     return expect(traderAccount.placeOrder(future.address, quantity, futurePrice2, 5))

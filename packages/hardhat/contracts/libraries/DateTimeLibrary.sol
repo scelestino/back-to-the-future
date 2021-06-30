@@ -27,7 +27,7 @@ pragma abicoder v2;
 // Enjoy. (c) BokkyPooBah / Bok Consulting Pty Ltd 2018-2019. The MIT Licence.
 // ----------------------------------------------------------------------------
 
-library BokkyPooBahsDateTimeLibrary {
+library DateTimeLibrary {
 
     uint constant SECONDS_PER_DAY = 24 * 60 * 60;
     uint constant SECONDS_PER_HOUR = 60 * 60;
@@ -177,9 +177,9 @@ library BokkyPooBahsDateTimeLibrary {
         }
     }
     // 1 = Monday, 7 = Sunday
-    function getDayOfWeek(uint timestamp) internal pure returns (uint dayOfWeek) {
+    function getDayOfWeek(uint timestamp) internal pure returns (uint dow) {
         uint _days = timestamp / SECONDS_PER_DAY;
-        dayOfWeek = (_days + 3) % 7 + 1;
+        dow = (_days + 3) % 7 + 1;
     }
 
     function getYear(uint timestamp) internal pure returns (uint year) {
@@ -328,5 +328,27 @@ library BokkyPooBahsDateTimeLibrary {
     function diffSeconds(uint fromTimestamp, uint toTimestamp) internal pure returns (uint _seconds) {
         require(fromTimestamp <= toTimestamp);
         _seconds = toTimestamp - fromTimestamp;
+    }
+
+    struct Date {
+        uint16 year;
+        uint8 month;
+        uint8 day;
+    }
+
+    function isValid(Date memory date) internal pure returns (bool valid) {
+        valid = isValidDate(date.year, date.month, date.day);
+    }
+
+    function asTimestamp(Date memory date) internal pure returns (uint timestamp) {
+        timestamp = _daysFromDate(date.year, date.month, date.day) * SECONDS_PER_DAY;
+    }
+
+    function dayOfWeek(Date memory date) internal pure returns (uint dow) {
+        dow = getDayOfWeek(asTimestamp(date));
+    }
+
+    function daysFromNow(Date memory date) internal view returns (uint _days) {
+        _days = diffDays(block.timestamp, asTimestamp(date));
     }
 }

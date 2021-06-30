@@ -45,7 +45,7 @@ contract FutureStub is IFuture {
     }
 
     function short(uint quantity, uint /*price*/) external view override returns (int amountPaid, int amountReceived) {
-        return (-int(quantity), - int(quantity * bidRate()) / int(10 ** base.token().decimals()));
+        return (-int(quantity), int(quantity * bidRate()) / int(10 ** base.token().decimals()));
     }
 
     function bidRate() public override view returns (uint256) {

@@ -65,19 +65,13 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         amountReceived = - (zeroForOne ? amount1 : amount0);
         require(uint(amountReceived) == quantity, "Couldn't get the required amount");
 
-        console.log(uint(amountReceived));
-
         int hedgeCost = (zeroForOne ? amount0 : amount1);
-        amountPaid = - int(_adjustAmountWithRate(uint(hedgeCost), quote.borrowingRate()));
-
-        console.log(uint(- amountPaid));
-        console.log(price.mul(quantity));
-
+        amountPaid = - int(_adjustAskAmountWithRate(uint(hedgeCost), quote.borrowingRate()));
         require(uint(- amountPaid) <= price.mul(quantity), "Final price exceeds slippage");
     }
 
     function short(uint quantity, uint price) external override returns (int amountPaid, int amountReceived) {
-        uint hedgeQuantity = quantity.mul(PRBMathUD60x18.SCALE - base.borrowingRate());
+        uint expectedAmount = quoteBidRate(quantity).mul(quantity);
 
         // bool zeroForOne = tokenIn < tokenOut;
         bool zeroForOne = address(base.token()) < address(quote.token());
@@ -85,16 +79,18 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         (int256 amount0, int256 amount1) = pool.swap(
             address(quote),
             zeroForOne,
-            int(hedgeQuantity),
+            - int(expectedAmount),
             (zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1),
             abi.encode("")
         );
 
         amountPaid = (zeroForOne ? amount0 : amount1);
-        require(uint(amountPaid) == hedgeQuantity, "Couldn't exchange the required amount");
-        amountPaid = - int(quantity);
-
         amountReceived = - (zeroForOne ? amount1 : amount0);
+        uint adjustedRate = _adjustBidAmountWithRate(uint(amountReceived.div(amountPaid)), base.borrowingRate());
+
+        amountPaid = -int(quantity);
+        amountReceived = int(quantity.mul(adjustedRate));
+
         require(uint(amountReceived) >= price.mul(quantity), 'Too little received');
     }
 
@@ -111,13 +107,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     }
 
     function quoteBidRate(uint quantity) public override view returns (uint256 rate) {
-        rate = spot();
-        uint borrowingRate = base.borrowingRateAfterLoan(quantity);
-        if (borrowingRate != 0) {
-            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
-            int adjustedBorrowingRate = - int(remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD));
-            rate = rate.mul(uint(adjustedBorrowingRate.exp()));
-        }
+        rate = _adjustBidAmountWithRate(spot(), base.borrowingRateAfterLoan(quantity));
     }
 
     function bidQty() external override view returns (uint qty) {
@@ -130,15 +120,24 @@ contract Future is IFuture, IUniswapV3SwapCallback {
 
     function quoteAskRate(uint quantity) public override view returns (uint256 rate) {
         rate = spot();
-        uint borrowingRate = quote.borrowingRateAfterLoan(quantity.mul(rate));
-        rate = _adjustAmountWithRate(rate, borrowingRate);
+        rate = _adjustAskAmountWithRate(rate, quote.borrowingRateAfterLoan(quantity.mul(rate)));
     }
 
-    function _adjustAmountWithRate(uint amount, uint borrowingRate) internal view returns (uint adjustedPrice) {
+    function _adjustAskAmountWithRate(uint amount, uint borrowingRate) internal view returns (uint adjustedPrice) {
         if (borrowingRate != 0) {
             uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
             uint adjustedBorrowingRate = remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD);
             adjustedPrice = amount.mul(adjustedBorrowingRate.exp());
+        } else {
+            adjustedPrice = amount;
+        }
+    }
+
+    function _adjustBidAmountWithRate(uint amount, uint borrowingRate) internal view returns (uint adjustedPrice) {
+        if (borrowingRate != 0) {
+            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
+            int adjustedBorrowingRate = - int(remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD));
+            adjustedPrice = amount.mul(uint(adjustedBorrowingRate.exp()));
         } else {
             adjustedPrice = amount;
         }

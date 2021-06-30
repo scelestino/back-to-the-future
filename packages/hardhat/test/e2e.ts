@@ -120,11 +120,11 @@ describe("E2E", async () => {
         expect(userAccount.address).to.properAddress
     })
 
-    describe.only("Users can trade", async () => {
+    describe("Users can trade", async () => {
 
         [
-            [parseEther("2"), parseUnits("2536.166763", 6), parseUnits("2548.847596", 6), parseUnits("-5076.154265", 6), parseUnits("5072.628169", 6), parseUnits("985.725742", 6), parseUnits("2539.211657", 6), parseUnits("2551.907708", 6)],
-            [parseEther("-2"), parseUnits("2530.136995", 6), parseUnits("2517.486310", 6), parseUnits("5065.001132", 6), parseUnits("5065.001132", 6), parseUnits("986.748523", 6), parseUnits("986.748523", 6), parseUnits("986.748523", 6)]
+            [parseEther("2"), parseUnits("2536.166763", 6), parseUnits("2548.847596", 6), parseUnits("-5076.154265", 6), parseUnits("-5072.628169", 6), parseUnits("985.725742", 6), parseUnits("2539.211657", 6), parseUnits("2551.907708", 6)],
+            [parseEther("-2"), parseUnits("2530.136995", 6), parseUnits("2517.486310", 6), parseUnits("5056.477958", 6), parseUnits("5060.27399", 6), parseUnits("986.748046", 6), parseUnits("2524.606604", 6), parseUnits("2511.98357", 6)]
         ]
             .forEach(([quantity, price, priceWithSlippage, expectedCost, expectedHedgeCost, purchasingPower, price2, price2WithSlippage]) => {
                 const isLong = quantity.gt(0);
@@ -154,8 +154,8 @@ describe("E2E", async () => {
                     expect(position.quantity).to.be.eq(quantity)
                     expect(position.cost).to.be.eq(expectedCost)
 
-                    expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(initialUsdtHoldings.sub(expectedHedgeCost))
-                    expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                    expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(initialUsdtHoldings.add(expectedHedgeCost))
+                    expect(await weth.balanceOf(wethPool.address)).to.be.gte(initialWethHoldings.add(quantity))
 
                     expect(await (isLong ? future.quoteAskRate(quantity) : future.quoteBidRate(quantity.abs()))).to.be.eq(price2)
 

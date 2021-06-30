@@ -4,35 +4,42 @@ pragma abicoder v2;
 
 import "hardhat/console.sol";
 
-import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
-import '@uniswap/v3-core/contracts/libraries/SqrtPriceMath.sol';
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
+import "prb-math/contracts/PRBMath.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
-import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
-import '@uniswap/v3-periphery/contracts/libraries/CallbackValidation.sol';
+import './dependencies/Uniswap.sol';
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
+import "./libraries/DateTimeLibrary.sol";
 
 import "./interfaces/IFuture.sol";
 import "./interfaces/IPool.sol";
 
 contract Future is IFuture, IUniswapV3SwapCallback {
-    using SafeMath for uint256;
+    using DateTimeLibrary for uint256;
+    using DateTimeLibrary for DateTimeLibrary.Date;
+    using PRBMathUD60x18 for uint256;
+    using PRBMathSD59x18 for int256;
+
+    uint private constant ONE_YEAR_WAD = 365e18;
 
     IPool immutable public override base;
     IPool immutable public override quote;
     IUniswapV3Pool immutable pool;
     PoolAddress.PoolKey poolKey;
 
+    //TODO make this a parameter of the actual operations
+    DateTimeLibrary.Date expiry;
+
     constructor(IPool _base, IPool _quote, uint24 _fee, address _factory) {
         base = _base;
         quote = _quote;
         poolKey = PoolAddress.getPoolKey(address(_base.token()), address(_quote.token()), _fee);
         pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
+        expiry = DateTimeLibrary.Date({year : 2021, month : 7, day : 9});
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external override {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata /*_data*/) external override {
         require(msg.sender == address(pool), "Caller was not the expected UNI pool");
         require(amount0Delta > 0 || amount1Delta > 0);
 
@@ -44,7 +51,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         }
     }
 
-    function long(int quantity, uint price) external override returns (int amountReceived, int amountPaid) {
+    function long(int quantity, uint /*price*/) external override returns (int amountReceived, int amountPaid) {
         // bool zeroForOne = tokenIn < tokenOut;
         bool zeroForOne = address(quote.token()) < address(base.token());
 
@@ -61,7 +68,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         require(amountReceived == quantity, "Couldn't get the required amount");
     }
 
-    function short(int quantity, uint price) external override returns (int amountPaid, int amountReceived) {
+    function short(int quantity, uint /*price*/) external override returns (int amountPaid, int amountReceived) {
         //TODO remove interest from price and pass slippage limit to UNI
 
         // bool zeroForOne = tokenIn < tokenOut;
@@ -82,16 +89,20 @@ contract Future is IFuture, IUniswapV3SwapCallback {
 
     function spot() public view returns (uint256 rate) {
         (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-        rate = uint(sqrtPriceX96).mul(uint(sqrtPriceX96)).mul(1e18) >> (96 * 2);
+        rate = (uint(sqrtPriceX96) * uint(sqrtPriceX96) * PRBMathUD60x18.SCALE) >> (96 * 2);
         if (address(base.token()) == poolKey.token1) {
-            rate = FullMath.mulDiv(base.tokenWAD(), quote.tokenWAD(), rate);
+            rate = PRBMath.mulDiv(base.tokenWAD(), quote.tokenWAD(), rate);
         }
     }
 
     function bidRate() external override view returns (uint256 rate) {
         rate = spot();
-        //TODO hardcoded to 2.15%, should come from the pricing formula using the pool rates
-        rate = rate - FullMath.mulDiv(215, rate, 10000);
+        uint borrowingRate = base.borrowingRate();
+        if (borrowingRate != 0) {
+            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
+            int adjustedBorrowingRate = - int(remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD));
+            rate = rate.mul(uint(adjustedBorrowingRate.exp()));
+        }
     }
 
     function bidQty() external override view returns (uint qty) {
@@ -100,11 +111,15 @@ contract Future is IFuture, IUniswapV3SwapCallback {
 
     function askRate() public override view returns (uint256 rate) {
         rate = spot();
-        //TODO hardcoded to 3.25%, should come from the pricing formula using the pool rates
-        rate = rate + FullMath.mulDiv(325, rate, 10000);
+        uint borrowingRate = quote.borrowingRate();
+        if (borrowingRate != 0) {
+            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
+            uint adjustedBorrowingRate = remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD);
+            rate = rate.mul(adjustedBorrowingRate.exp());
+        }
     }
 
     function askQty() external override view returns (uint qty) {
-        qty = FullMath.mulDiv(quote.available(), base.tokenWAD(), askRate());
+        qty = quote.available() * base.tokenWAD() / askRate();
     }
 }

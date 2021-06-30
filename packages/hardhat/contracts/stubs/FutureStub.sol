@@ -2,16 +2,12 @@ pragma solidity >=0.6.0 <0.9.0;
 pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
-import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
 import "../interfaces/IFuture.sol";
 import "../interfaces/IPool.sol";
 
 contract FutureStub is IFuture {
-    using LowGasSafeMath for int256;
-
     IPool public override base;
     IPool public override quote;
-    //    uint public override expiry;
 
     uint spot = 1;
     uint bidInterestRate = 0;
@@ -19,10 +15,9 @@ contract FutureStub is IFuture {
     uint _bidRate = 0;
     uint _askRate = 0;
 
-    constructor(IPool _base, IPool _quote, uint _expiry) {
+    constructor(IPool _base, IPool _quote) {
         base = _base;
         quote = _quote;
-        //        expiry = _expiry;
     }
 
     function setSpot(uint _spot) external {
@@ -45,11 +40,11 @@ contract FutureStub is IFuture {
         _askRate = askRate_;
     }
 
-    function long(int quantity, uint price) external override returns (int amountReceived, int amountPaid) {
+    function long(int quantity, uint /*price*/) external view override returns (int amountReceived, int amountPaid) {
         return (quantity, - quantity * int(askRate()) / int(10 ** base.token().decimals()));
     }
 
-    function short(int quantity, uint price) external override returns (int amountPaid, int amountReceived) {
+    function short(int quantity, uint /*price*/) external view override returns (int amountPaid, int amountReceived) {
         return (quantity, - quantity * int(bidRate()) / int(10 ** base.token().decimals()));
     }
 

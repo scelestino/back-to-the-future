@@ -1,5 +1,4 @@
 pragma solidity >=0.6.0 <0.9.0;
-pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
@@ -14,4 +13,6 @@ interface IPool {
     function repay(uint amount, uint interest) external;
 
     function available() view external returns (uint qty);
+
+    function borrowingRate() view external returns (uint rate);
 }

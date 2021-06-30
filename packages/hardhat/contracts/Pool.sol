@@ -13,16 +13,16 @@ contract Pool is IPool {
     using SafeERC20 for ERC20;
     using DSMath for uint256;
 
-    // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates. Expressed in ray
+    // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
     uint256 public immutable OPTIMAL_UTILIZATION_RATE;
-    // This constant represents the excess utilization rate above the optimal. Expressed in ray
+    // This constant represents the excess utilization rate above the optimal.
     // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
     uint256 public immutable EXCESS_UTILIZATION_RATE;
-    // Base variable borrow rate when Utilization rate = 0. Expressed in ray
+    // Base variable borrow rate when Utilization rate = 0.
     uint256 internal immutable baseBorrowRate;
-    // Slope of the variable interest curve when utilization rate > 0 and <= OPTIMAL_UTILIZATION_RATE. Expressed in ray
+    // Slope of the variable interest curve when utilization rate > 0 and <= OPTIMAL_UTILIZATION_RATE.
     uint256 internal immutable slope1;
-    // Slope of the variable interest curve when utilization rate > OPTIMAL_UTILIZATION_RATE. Expressed in ray
+    // Slope of the variable interest curve when utilization rate > OPTIMAL_UTILIZATION_RATE.
     uint256 internal immutable slope2;
 
 
@@ -44,7 +44,7 @@ contract Pool is IPool {
         token = _token;
         tokenWAD = 10 ** _token.decimals();
         OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
-        EXCESS_UTILIZATION_RATE = DSMath.RAY - _optimalUtilizationRate;
+        EXCESS_UTILIZATION_RATE = DSMath.WAD - _optimalUtilizationRate;
         baseBorrowRate = _baseBorrowRate;
         slope1 = _slope1;
         slope2 = _slope2;
@@ -122,13 +122,13 @@ contract Pool is IPool {
     }
 
     function borrowingRate() view external override returns (uint rate) {
-        uint utilizationRate = borrowed == 0 ? 0 : borrowed.rdiv(balance);
+        uint utilizationRate = borrowed == 0 ? 0 : borrowed.wdiv(balance);
 
         if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-            uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).rdiv(EXCESS_UTILIZATION_RATE);
-            rate = baseBorrowRate + slope1 + slope2.rmul(excessUtilizationRateRatio);
+            uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).wdiv(EXCESS_UTILIZATION_RATE);
+            rate = baseBorrowRate + slope1 + slope2.wmul(excessUtilizationRateRatio);
         } else {
-            rate = baseBorrowRate + utilizationRate.rmul(slope1).rdiv(OPTIMAL_UTILIZATION_RATE);
+            rate = baseBorrowRate + utilizationRate.wmul(slope1).wdiv(OPTIMAL_UTILIZATION_RATE);
         }
     }
 }

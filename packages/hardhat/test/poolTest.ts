@@ -8,7 +8,7 @@ import {ERC20Stub, ERC20Stub__factory, Pool, Pool__factory} from '../typechain'
 
 chai.use(solidity).use(chaiAsPromised)
 const {expect} = chai
-const {parseUnits} = utils
+const {parseUnits, formatUnits} = utils
 
 describe("Pool", async () => {
 
@@ -279,16 +279,16 @@ describe("Pool", async () => {
     describe("Borrowing rate", async () => {
 
         [
-            [parseUnits("100"), parseUnits("10"), parseUnits("0.012307692307692307692307692", 27), parseUnits("0.65", 27), 0, parseUnits("0.08", 27), parseUnits("1", 27)],
-            [parseUnits("100"), parseUnits("10"), parseUnits("0.112307692307692307692307692", 27), parseUnits("0.65", 27), parseUnits("0.1", 27), parseUnits("0.08", 27), parseUnits("1", 27)],
-            [parseUnits("100"), parseUnits("65"), parseUnits("0.08", 27), parseUnits("0.65", 27), 0, parseUnits("0.08", 27), parseUnits("1", 27)],
-            [parseUnits("100"), parseUnits("80"), parseUnits("0.508571428571428571428571429", 27), parseUnits("0.65", 27), 0, parseUnits("0.08", 27), parseUnits("1", 27)],
-            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0125", 27), parseUnits("0.8", 27), 0, parseUnits("0.04", 27), parseUnits("0.75", 27)],
-            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0625", 27), parseUnits("0.8", 27), parseUnits("0.05", 27), parseUnits("0.04", 27), parseUnits("0.75", 27)],
-            [parseUnits("100000"), parseUnits("80000"), parseUnits("0.04", 27), parseUnits("0.8", 27), 0, parseUnits("0.04", 27), parseUnits("0.75", 27)],
-            [parseUnits("100000"), parseUnits("90000"), parseUnits("0.415", 27), parseUnits("0.8", 27), 0, parseUnits("0.04", 27), parseUnits("0.75", 27)]
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.012307692307692308"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.112307692307692308"), parseUnits("0.65"), parseUnits("0.1"), parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("65"), parseUnits("0.08"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("80"), parseUnits("0.508571428571428571"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0125"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0625"), parseUnits("0.8"), parseUnits("0.05"), parseUnits("0.04"), parseUnits("0.75")],
+            [parseUnits("100000"), parseUnits("80000"), parseUnits("0.04"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],
+            [parseUnits("100000"), parseUnits("90000"), parseUnits("0.415"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")]
         ].forEach(([poolSize, borrowedAmount, borrowingRate, optimalUtilizationRate, baseBorrowRate, slope1, slope2]) => [
-            it(`should return the borrowing rate for poolSize = ${poolSize.toString()}, borrowed amount = ${borrowedAmount.toString()}`, async () => {
+            it(`should return the borrowing rate for poolSize = ${formatUnits(poolSize.toString())}, borrowed amount = ${formatUnits(borrowedAmount.toString())}`, async () => {
                 sut = await poolFactory.deploy(erc20.address, optimalUtilizationRate, baseBorrowRate, slope1, slope2)
                 await sut.deployed()
                 expect(sut.address).to.properAddress

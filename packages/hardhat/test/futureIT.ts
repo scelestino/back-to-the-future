@@ -104,7 +104,7 @@ describe("Futures", async () => {
                 expect(await future.askQty()).to.be.eq(parseUnits("7.408534273953079204"))
                 expect(await future.askRate()).to.be.eq(parseUnits("2530.864987143440756470"))
                 expect(await future.spot()).to.be.eq(parseUnits("2528.699078001282220713"))
-                expect(await future.bidQty()).to.be.eq(parseUnits("9.112149532710280367"))
+                expect(await future.bidQty()).to.be.eq(parseUnits("9"))
                 expect(await future.bidRate()).to.be.eq(parseUnits("2526.568301571271227325"))
             })
 
@@ -224,7 +224,7 @@ describe("Futures", async () => {
                 expect(await future.askQty()).to.be.eq(parseUnits("7.389987004544287463"))
                 expect(await future.askRate()).to.be.eq(parseUnits("2537.216911", 6))
                 expect(await future.spot()).to.be.eq(parseUnits("2535.045566", 6))
-                expect(await future.bidQty()).to.be.eq(parseUnits("9.112149532710280367"))
+                expect(await future.bidQty()).to.be.eq(parseUnits("9"))
                 expect(await future.bidRate()).to.be.eq(parseUnits("2532.909442", 6))
             })
 

@@ -127,7 +127,7 @@ contract Pool is IPool {
 
     function borrowingRateAfterLoan(uint amount) view public override returns (uint rate) {
         if (balance == 0) {
-            rate = 0;
+            rate = baseBorrowRate;
         } else {
             uint balanceAfterLoan = amount + borrowed;
             uint utilizationRate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);

@@ -29,7 +29,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     PoolAddress.PoolKey poolKey;
 
     //TODO make this a parameter of the actual operations
-    DateTimeLibrary.Date expiry;
+    DateTimeLibrary.Date public expiry;
 
     constructor(
         IPool _base,

@@ -62,7 +62,7 @@ export const Wallet = ({
   const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
   const balance = useContractReader(contracts, "UserAccount", "wallet", [address, DAI_ADDRESS], formatUnits)
   const purchasingPower = useContractReader(contracts, "UserAccount", "purchasingPower", [address, DAI_ADDRESS], formatUnits)
-  const margin = Number(purchasingPower) - Number(balance) || '0000.0000'
+  const margin = Math.abs(Number(balance) - Number(purchasingPower) || 0) || '0000.0000'
 
   const [modalSelected, setModalSelected] = useState(NONE)
   const [amount, setAmount] = useState()
@@ -89,7 +89,7 @@ export const Wallet = ({
     <InnerWrapper>
       <Typography>Amount</Typography>
       <Input
-        onChange={({ target: { value }}) => setAmount(parseUnits(value))}
+        onChange={({ target: { value }}) => setAmount(parseUnits(value || '0'))}
         placeholder={`DAI to ${modalSelected}`}
         style={{ width: 150 }}
       />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { Typography, Input, Modal, Button, Card } from "antd";
 import { format } from 'date-fns'
@@ -60,29 +60,51 @@ const FormItem = styled.span`
 
 const BuySell = ({ title, userProvider }) => {
 
-  const [buyQty, setBuyQty] = useState(parseUnits('1'))
-  const [sellQty, setSellQty] = useState(1)
+  const [buyQty, setBuyQty] = useState('1')
+  const [sellQty, setSellQty] = useState('1')
 
   const address = useUserAddress(userProvider)
   const contracts = useContractLoader(userProvider)
   const gasPrice = useGasPrice(targetNetwork, "fast")
   const FutureContract = useContract("Future", userProvider)
   // const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
-  const quoteBidRate = useContractReader(contracts, "Future", "quoteBidRate", [buyQty], formatUnits)
+  const quoteBidRate = useContractReader(contracts, "Future", "quoteBidRate", [parseUnits(buyQty)])
+  const quoteAskRate = useContractReader(contracts, "Future", "quoteAskRate", [parseUnits(sellQty)])
+  const noFills = useContractReader(contracts, "UserAccount", "noFills", [address], (bigNum) => formatUnits(bigNum, 0))
   // const purchasingPower = useContractReader(contracts, "UserAccount", "purchasingPower", [address, DAI_ADDRESS], formatUnits)
 
-  const handleSubmitTrade = () => {
-    console.log('called handle submit trade!')
+  useEffect(() => {
+    console.log('noFills', noFills)
+    // [1, 2]
+    const getPositions = async () => {
+      // [1, 1]
+      const arr = Array(Number(noFills)).fill(1)
+      const resultArr = arr.map(async (_, i) => {
+        console.log(`position ${i}`, await contracts.UserAccount.fills(address, i))
+      })
+      // console.log('positions res', resultArr)
+    }
+    if (noFills !== undefined) {
+      getPositions()
+    }
+  }, [noFills])
+
+  const handleSubmitTrade = async (qty, isBuy) => {
+    const tx = Transactor(userProvider, gasPrice)
+    if (isBuy) {
+      const priceWithSlippage = '2550'
+      await tx(contracts.UserAccount.placeOrder(FutureContract.address, parseUnits(buyQty), parseUnits(priceWithSlippage), 5));
+    }
   }
 
   return (
     <BuySellWrapper>
       <Cell>
-        {balanceItem('Price', quoteBidRate, true)}
-        <Button>Buy</Button>
+        {balanceItem('Price', quoteAskRate ? formatUnits(quoteAskRate) : '-', true)}
+        <Button onClick={() => handleSubmitTrade(buyQty, true)}>Buy</Button>
       </Cell>
       <Cell>
-        {balanceItem('Price', '2083.00000000', true)}
+        {balanceItem('Price', quoteBidRate ? formatUnits(quoteBidRate) : '-', true)}
         <Button>Sell</Button>
       </Cell>
     </BuySellWrapper>

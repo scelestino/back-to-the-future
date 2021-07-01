@@ -8,8 +8,9 @@ import "prb-math/contracts/PRBMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 import "./interfaces/IPool.sol";
+import "./interfaces/Validated.sol";
 
-contract Pool is IPool {
+contract Pool is IPool, Validated {
     using SafeERC20 for ERC20;
     using PRBMathUD60x18 for uint256;
 
@@ -50,10 +51,7 @@ contract Pool is IPool {
         slope2 = _slope2;
     }
 
-    function deposit(uint256 amount) external returns (uint256 share) {
-
-        require(amount > 0, "Pool: deposit amount should be greater than zero");
-
+    function deposit(uint256 amount) validUAmount(amount) external returns (uint256 share) {
         share = totalShare > 0
         ? PRBMath.mulDiv(amount, totalShare, balance)
         : amount * (10 ** (18 - token.decimals()));
@@ -66,9 +64,7 @@ contract Pool is IPool {
 
     }
 
-    function withdraw(uint amount) external {
-
-        require(amount > 0, "Pool: withdraw amount should be greater than zero");
+    function withdraw(uint amount) validUAmount(amount) external {
         require(balance >= amount, "Pool: withdraw amount greater than balance");
 
         uint256 share = PRBMath.mulDiv(totalShare, amount, balance);
@@ -96,25 +92,17 @@ contract Pool is IPool {
     }
 
     //TODO add security
-    function borrow(uint amount, address recipient) external override {
-
-        require(amount > 0, "Pool: borrow amount should be greater than zero");
-
+    function borrow(uint amount, address recipient) validUAmount(amount) validAddress(recipient) external override {
         borrowed = borrowed + amount;
         token.safeTransfer(recipient, amount);
-
     }
 
     //TODO add security
-    function repay(uint amount, uint interest) external override {
-
-        require(amount > 0, "Pool: repay amount should be greater than zero");
-        require(interest > 0, "Pool: repay interest should be greater than zero");
+    function repay(uint amount, uint interest) validUAmount(amount) validUAmount(interest) external override {
         require(borrowed >= amount, "Pool: repay amount should be equals or lower than borrowed");
 
         balance = balance + interest;
         borrowed = borrowed - amount;
-
     }
 
     function available() view external override returns (uint qty) {

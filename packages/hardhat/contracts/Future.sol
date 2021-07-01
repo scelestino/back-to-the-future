@@ -195,10 +195,14 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         );
     }
 
+    function askQty() external view override returns (uint256 qty) {
+        qty = (quote.available() * base.tokenScale()) / askRate();
+    }
+
     function _adjustAskAmountWithRate(uint256 amount, uint256 borrowingRate)
-        internal
-        view
-        returns (uint256 adjustedPrice)
+    internal
+    view
+    returns (uint256 adjustedPrice)
     {
         if (borrowingRate != 0) {
             uint256 remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
@@ -212,9 +216,9 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     }
 
     function _adjustBidAmountWithRate(uint256 amount, uint256 borrowingRate)
-        internal
-        view
-        returns (uint256 adjustedPrice)
+    internal
+    view
+    returns (uint256 adjustedPrice)
     {
         if (borrowingRate != 0) {
             uint256 remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
@@ -225,9 +229,5 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         } else {
             adjustedPrice = amount;
         }
-    }
-
-    function askQty() external view override returns (uint256 qty) {
-        qty = (quote.available() * base.tokenScale()) / askRate();
     }
 }

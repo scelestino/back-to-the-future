@@ -8,31 +8,33 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import "prb-math/contracts/PRBMath.sol";
 
 import "./interfaces/IFuture.sol";
+import "./interfaces/Validated.sol";
 
-contract UserAccount {
+contract UserAccount is Validated {
     using SafeERC20 for IERC20;
 
     mapping(address => mapping(address => int256)) wallets;
     mapping(address => Fill[]) public fills;
-    //TODO replace second address by deterministic key similar to UNI pool address
+    //TODO do we really need this?
     mapping(address => mapping(address => Position)) positions;
 
-    function deposit(address token, int256 amount) external {
-        require(token != address(0), "UserAccount: token is the zero address");
-        require(amount > 0, "UserAccount: can't deposit a negative amount");
-
-        IERC20(token).safeTransferFrom(msg.sender, address(this), uint(amount));
+    function deposit(address token, int256 amount)
+    validAddress(token)
+    validIAmount(amount)
+    external {
         wallets[msg.sender][token] = wallets[msg.sender][token] + amount;
+        IERC20(token).safeTransferFrom(msg.sender, address(this), uint(amount));
     }
 
-    function withdraw(address token, int256 amount) external {
-        require(token != address(0), "UserAccount: token is the zero address");
-        require(amount > 0, "UserAccount: can't withdraw a negative amount");
+    function withdraw(address token, int256 amount)
+    validAddress(token)
+    validIAmount(amount)
+    external {
         int256 balance = wallets[msg.sender][token];
         require(balance >= amount, "UserAccount: not enough balance");
 
-        IERC20(token).safeTransfer(msg.sender, uint(amount));
         wallets[msg.sender][token] = balance - amount;
+        IERC20(token).safeTransfer(msg.sender, uint(amount));
     }
 
     function noFills(address trader) external view returns (uint256) {
@@ -43,8 +45,7 @@ contract UserAccount {
         return wallets[trader][token];
     }
 
-    function position(address trader, address future) public view returns (Position memory)
-    {
+    function position(address trader, address future) public view returns (Position memory) {
         return positions[trader][future];
     }
 
@@ -56,19 +57,19 @@ contract UserAccount {
             if (address(fill.future.quote().token()) == token) {
                 //consider the rate that it'd paid to close the fill, aka the other side of the market
                 int marketRate = int(fill.openQuantity > 0 ? fill.future.bidRate() : fill.future.askRate());
-                // TODO how safe are this math operations?
                 margin += fill.openQuantity * marketRate / int(fill.leverage * fill.future.base().tokenScale());
             }
         }
         pp = wallet(trader, token) - int(abs(margin));
     }
 
-    function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage) external {
+    function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage)
+    validQuantity(_quantity)
+    external {
         uint absQty = abs(_quantity);
         (uint liquidity, uint marketRate) = _quantity > 0 ? (future.askQty(), future.quoteAskRate(absQty)) : (future.bidQty(), future.quoteBidRate(absQty));
-        require(_quantity > 0 ? price >= marketRate : price <= marketRate , "UserAccount: invalid price");
-        require(liquidity >= absQty, "UserAccount: invalid quantity");
-        require(_quantity != 0, "UserAccount: can't open a position with 0 amount");
+        require(_quantity > 0 ? price >= marketRate : price <= marketRate, "Price worse than market");
+        require(liquidity >= absQty, "Not enough liquidity");
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
 

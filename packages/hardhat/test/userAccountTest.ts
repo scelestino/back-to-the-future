@@ -153,7 +153,7 @@ describe("User Accounts", async () => {
                 if (isDeposit) {
                     const deposit = traderAccount.deposit(lusd.address, amount);
                     if (amount.lte(0)) {
-                        await expect(deposit).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'UserAccount: can't deposit a negative amount'")
+                        await expect(deposit).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount must be greater than zero'")
                     } else if (amount.gt(traderTokenBalance)) {
                         await expect(deposit).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'ERC20: transfer amount exceeds balance'")
                     } else {
@@ -165,7 +165,7 @@ describe("User Accounts", async () => {
                 } else {
                     const withdraw = traderAccount.withdraw(lusd.address, amount);
                     if (amount.lte(0)) {
-                        await expect(withdraw).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'UserAccount: can't withdraw a negative amount'")
+                        await expect(withdraw).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount must be greater than zero'")
                     } else if (amount.gt(traderWalletBalance)) {
                         await expect(withdraw).to.eventually.be.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'UserAccount: not enough balance'")
                     } else {

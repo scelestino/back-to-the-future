@@ -103,7 +103,7 @@ describe("Pool", async () => {
     describe("Borrow", async () => {
 
         it("shouldn't allow borrow zero", async () => {
-            await expect(sut.borrow(parseUnits("0"), owner.address)).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: borrow amount should be greater than zero'");
+            await expect(sut.borrow(parseUnits("0"), owner.address)).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount must be greater than zero'");
         })
 
         it("should allow borrow", async () => {
@@ -130,11 +130,11 @@ describe("Pool", async () => {
     describe("Repay", async () => {
 
         it("shouldn't allow repay amount zero", async () => {
-            await expect(sut.repay(parseUnits("0"), parseUnits("1"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: repay amount should be greater than zero'");
+            await expect(sut.repay(parseUnits("0"), parseUnits("1"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount must be greater than zero'");
         })
 
         it("shouldn't allow repay interest zero", async () => {
-            await expect(sut.repay(parseUnits("1"), parseUnits("0"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: repay interest should be greater than zero'");
+            await expect(sut.repay(parseUnits("1"), parseUnits("0"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount must be greater than zero'");
         })
 
         it("shouldn't allow repay more than borrowed", async () => {
@@ -177,7 +177,7 @@ describe("Pool", async () => {
     describe("Withdaw", async () => {
 
         it("shouldn't allow liquidity provider to withdraw zero", async () => {
-            await expect(sut.connect(lp1).withdraw(parseUnits("0"))).eventually.to.rejectedWith(Error, "Pool: withdraw amount should be greater than zero'")
+            await expect(sut.connect(lp1).withdraw(parseUnits("0"))).eventually.to.rejectedWith(Error, "Amount must be greater than zero'")
         })
 
         it("shouldn't allow liquidity provider to withdraw more balance", async () => {

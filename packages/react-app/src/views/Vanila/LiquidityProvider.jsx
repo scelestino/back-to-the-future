@@ -8,6 +8,9 @@ import { Web3Provider } from "@ethersproject/providers";
 import Web3Modal from "web3modal";
 import { Transactor } from "./../../helpers";
 import { Button, Card, DatePicker, Divider, Input, List, Progress, Slider, Spin, Switch } from "antd";
+import { utils } from 'ethers'
+
+const { parseUnits, formatUnits } = utils
 
 const { ethers } = require("ethers");
 
@@ -30,7 +33,6 @@ export const LiquidityProvider = () => {
         <tr>
           <td><Wallet userProvider={userProvider} /></td>
           <td><Deposit userProvider={userProvider} /></td>
-          <td><Input /></td>
         </tr>
         <tr>
           <td><Pool userProvider={userProvider} /></td>
@@ -77,29 +79,35 @@ const Wallet = ({userProvider}) => {
   const address = useUserAddress(userProvider)
   const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
   const balance = useContractReader({ DAI: DAIContract }, "DAI", "balanceOf", [address])
-  return <div>Wallet {balance ? balance.toString() : 0}</div>
+  return <div>Wallet {balance ? formatUnits(balance) : 0}</div>
 }
 
 const Deposit = ({userProvider}) => {
-
+  const [amount, setAmount] = useState() // number
   const [isEnabled, setEnabled] = useState(false)
   const address = useUserAddress(userProvider)
   const contracts = useContractLoader(userProvider)
   const gasPrice = useGasPrice(targetNetwork, "fast")
   const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
+  const decimals = useContractReader({ DAI: DAIContract }, "DAI", "decimals")
 
   useEffect(() => {
-    setEnabled(address && contracts && gasPrice && DAIContract)
-  }, [address, contracts, gasPrice, DAIContract])
+    setEnabled(address && contracts && gasPrice && DAIContract && decimals)
+  }, [address, contracts, gasPrice, DAIContract, decimals])
 
   const onClick = async () => {
     // TODO: check allowance first
     const tx = Transactor(userProvider, gasPrice)
-    await tx(DAIContract.approve(contracts.DAIPool.address, "10000000000000000000"), r => {console.log(r)} )
-    await tx(contracts.DAIPool.deposit("10000000000000000000"), r => {console.log(r)} )
+    await tx(DAIContract.approve(contracts.DAIPool.address, amount), r => {console.log(r)} )
+    await tx(contracts.DAIPool.deposit(amount), r => {console.log(r)} )
   }
 
-  return <Button disabled={!isEnabled} onClick={onClick}>DEPOSIT</Button>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'row' }} >
+      <Button disabled={!isEnabled} onClick={onClick}>DEPOSIT</Button>
+      <Input disabled={!isEnabled} onChange={({ target: { value }}) => setAmount(parseUnits(value, decimals))} />
+    </div>
+  )
 
 }
 
@@ -117,5 +125,5 @@ const Pool = ({userProvider}) => {
     })()
   })
 
-  return <div>Pool {balance.toString()}</div>
+  return <div>Pool {formatUnits(balance)}</div>
 }

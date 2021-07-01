@@ -8,7 +8,7 @@ import "prb-math/contracts/PRBMath.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
-import './dependencies/Uniswap.sol';
+import "./dependencies/Uniswap.sol";
 
 import "./libraries/DateTimeLibrary.sol";
 
@@ -21,57 +21,99 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     using PRBMathUD60x18 for uint256;
     using PRBMathSD59x18 for int256;
 
-    uint private constant ONE_YEAR_WAD = 365e18;
+    uint256 private constant ONE_YEAR_WAD = 365e18;
 
-    IPool immutable public override base;
-    IPool immutable public override quote;
-    IUniswapV3Pool immutable pool;
+    IPool public immutable override base;
+    IPool public immutable override quote;
+    IUniswapV3Pool public immutable pool;
     PoolAddress.PoolKey poolKey;
 
     //TODO make this a parameter of the actual operations
     DateTimeLibrary.Date expiry;
 
-    constructor(IPool _base, IPool _quote, uint24 _fee, address _factory) {
+    constructor(
+        IPool _base,
+        IPool _quote,
+        uint24 _fee,
+        address _factory
+    ) {
         base = _base;
         quote = _quote;
-        poolKey = PoolAddress.getPoolKey(address(_base.token()), address(_quote.token()), _fee);
+        poolKey = PoolAddress.getPoolKey(
+            address(_base.token()),
+            address(_quote.token()),
+            _fee
+        );
         pool = IUniswapV3Pool(PoolAddress.computeAddress(_factory, poolKey));
-        expiry = DateTimeLibrary.Date({year : 2021, month : 7, day : 9});
+        expiry = DateTimeLibrary.Date({year: 2021, month: 7, day: 9});
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata /*_data*/) external override {
-        require(msg.sender == address(pool), "Caller was not the expected UNI pool");
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata /*_data*/
+    ) external override {
+        require(
+            msg.sender == address(pool),
+            "Caller was not the expected UNI pool"
+        );
         require(amount0Delta > 0 || amount1Delta > 0);
 
         bool amount0isBase = address(base.token()) == poolKey.token0;
         if (amount0Delta > 0) {
-            (amount0isBase ? base : quote).borrow(uint(amount0Delta), address(pool));
+            (amount0isBase ? base : quote).borrow(
+                uint256(amount0Delta),
+                address(pool)
+            );
         } else {
-            (amount0isBase ? quote : base).borrow(uint(amount1Delta), address(pool));
+            (amount0isBase ? quote : base).borrow(
+                uint256(amount1Delta),
+                address(pool)
+            );
         }
     }
 
-    function long(uint quantity, uint price) external override returns (int amountReceived, int amountPaid) {
+    function long(uint256 quantity, uint256 price)
+        external
+        override
+        returns (int256 amountReceived, int256 amountPaid)
+    {
         // bool zeroForOne = tokenIn < tokenOut;
         bool zeroForOne = address(quote.token()) < address(base.token());
 
         (int256 amount0, int256 amount1) = pool.swap(
             address(base),
             zeroForOne,
-            - int(quantity),
-            (zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1),
+            -int256(quantity),
+            (
+                zeroForOne
+                    ? TickMath.MIN_SQRT_RATIO + 1
+                    : TickMath.MAX_SQRT_RATIO - 1
+            ),
             abi.encode("")
         );
-        amountReceived = - (zeroForOne ? amount1 : amount0);
-        require(uint(amountReceived) == quantity, "Couldn't get the required amount");
+        amountReceived = -(zeroForOne ? amount1 : amount0);
+        require(
+            uint256(amountReceived) == quantity,
+            "Couldn't get the required amount"
+        );
 
-        int hedgeCost = (zeroForOne ? amount0 : amount1);
-        amountPaid = - int(_adjustAskAmountWithRate(uint(hedgeCost), quote.borrowingRate()));
-        require(uint(- amountPaid) <= price.mul(quantity), "Final price exceeds slippage");
+        int256 hedgeCost = (zeroForOne ? amount0 : amount1);
+        amountPaid = -int256(
+            _adjustAskAmountWithRate(uint256(hedgeCost), quote.borrowingRate())
+        );
+        require(
+            uint256(-amountPaid) <= price.mul(quantity),
+            "Final price exceeds slippage"
+        );
     }
 
-    function short(uint quantity, uint price) external override returns (int amountPaid, int amountReceived) {
-        uint expectedAmount = quoteBidRate(quantity).mul(quantity);
+    function short(uint256 quantity, uint256 price)
+        external
+        override
+        returns (int256 amountPaid, int256 amountReceived)
+    {
+        uint256 expectedAmount = quoteBidRate(quantity).mul(quantity);
 
         // bool zeroForOne = tokenIn < tokenOut;
         bool zeroForOne = address(base.token()) < address(quote.token());
@@ -79,71 +121,113 @@ contract Future is IFuture, IUniswapV3SwapCallback {
         (int256 amount0, int256 amount1) = pool.swap(
             address(quote),
             zeroForOne,
-            - int(expectedAmount),
-            (zeroForOne ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1),
+            -int256(expectedAmount),
+            (
+                zeroForOne
+                    ? TickMath.MIN_SQRT_RATIO + 1
+                    : TickMath.MAX_SQRT_RATIO - 1
+            ),
             abi.encode("")
         );
 
         amountPaid = (zeroForOne ? amount0 : amount1);
-        amountReceived = - (zeroForOne ? amount1 : amount0);
-        uint adjustedRate = _adjustBidAmountWithRate(uint(amountReceived.div(amountPaid)), base.borrowingRate());
+        amountReceived = -(zeroForOne ? amount1 : amount0);
+        uint256 adjustedRate = _adjustBidAmountWithRate(
+            uint256(amountReceived.div(amountPaid)),
+            base.borrowingRate()
+        );
 
-        amountPaid = -int(quantity);
-        amountReceived = int(quantity.mul(adjustedRate));
+        amountPaid = -int256(quantity);
+        amountReceived = int256(quantity.mul(adjustedRate));
 
-        require(uint(amountReceived) >= price.mul(quantity), 'Too little received');
+        require(
+            uint256(amountReceived) >= price.mul(quantity),
+            "Too little received"
+        );
     }
 
     function spot() public view returns (uint256 rate) {
-        (uint160 sqrtPriceX96,,,,,,) = pool.slot0();
-        rate = (uint(sqrtPriceX96) * uint(sqrtPriceX96) * PRBMathUD60x18.SCALE) >> (96 * 2);
+        (uint160 sqrtPriceX96, , , , , , ) = pool.slot0();
+        rate =
+            (uint256(sqrtPriceX96) *
+                uint256(sqrtPriceX96) *
+                PRBMathUD60x18.SCALE) >>
+            (96 * 2);
         if (address(base.token()) == poolKey.token1) {
             rate = PRBMath.mulDiv(base.tokenScale(), quote.tokenScale(), rate);
         }
     }
 
-    function bidRate() external override view returns (uint256 rate) {
+    function bidRate() external view override returns (uint256 rate) {
         rate = quoteBidRate(0);
     }
 
-    function quoteBidRate(uint quantity) public override view returns (uint256 rate) {
-        rate = _adjustBidAmountWithRate(spot(), base.borrowingRateAfterLoan(quantity));
+    function quoteBidRate(uint256 quantity)
+        public
+        view
+        override
+        returns (uint256 rate)
+    {
+        rate = _adjustBidAmountWithRate(
+            spot(),
+            base.borrowingRateAfterLoan(quantity)
+        );
     }
 
-    function bidQty() external override view returns (uint qty) {
+    function bidQty() external view override returns (uint256 qty) {
         qty = base.available().div(PRBMathUD60x18.SCALE - base.borrowingRate());
     }
 
-    function askRate() public override view returns (uint256 rate) {
+    function askRate() public view override returns (uint256 rate) {
         rate = quoteAskRate(0);
     }
 
-    function quoteAskRate(uint quantity) public override view returns (uint256 rate) {
+    function quoteAskRate(uint256 quantity)
+        public
+        view
+        override
+        returns (uint256 rate)
+    {
         rate = spot();
-        rate = _adjustAskAmountWithRate(rate, quote.borrowingRateAfterLoan(quantity.mul(rate)));
+        rate = _adjustAskAmountWithRate(
+            rate,
+            quote.borrowingRateAfterLoan(quantity.mul(rate))
+        );
     }
 
-    function _adjustAskAmountWithRate(uint amount, uint borrowingRate) internal view returns (uint adjustedPrice) {
+    function _adjustAskAmountWithRate(uint256 amount, uint256 borrowingRate)
+        internal
+        view
+        returns (uint256 adjustedPrice)
+    {
         if (borrowingRate != 0) {
-            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
-            uint adjustedBorrowingRate = remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD);
+            uint256 remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
+            uint256 adjustedBorrowingRate = remainingDays
+            .mul(borrowingRate)
+            .div(ONE_YEAR_WAD);
             adjustedPrice = amount.mul(adjustedBorrowingRate.exp());
         } else {
             adjustedPrice = amount;
         }
     }
 
-    function _adjustBidAmountWithRate(uint amount, uint borrowingRate) internal view returns (uint adjustedPrice) {
+    function _adjustBidAmountWithRate(uint256 amount, uint256 borrowingRate)
+        internal
+        view
+        returns (uint256 adjustedPrice)
+    {
         if (borrowingRate != 0) {
-            uint remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
-            int adjustedBorrowingRate = - int(remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD));
-            adjustedPrice = amount.mul(uint(adjustedBorrowingRate.exp()));
+            uint256 remainingDays = expiry.daysFromNow() * PRBMathUD60x18.SCALE;
+            int256 adjustedBorrowingRate = -int256(
+                remainingDays.mul(borrowingRate).div(ONE_YEAR_WAD)
+            );
+            adjustedPrice = amount.mul(uint256(adjustedBorrowingRate.exp()));
         } else {
             adjustedPrice = amount;
         }
     }
 
-    function askQty() external override view returns (uint qty) {
-        qty = quote.available() * base.tokenScale() / askRate();
+    function askQty() external view override returns (uint256 qty) {
+        qty = (quote.available() * base.tokenScale()) / askRate();
     }
 }

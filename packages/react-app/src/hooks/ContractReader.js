@@ -22,11 +22,11 @@ const DEBUG = false;
   - Pass pollTime - if no pollTime is specified, the function will update on every new block
 */
 
-export default function useContractReader(contracts, contractName, functionName, args, pollTime, formatter, onChange) {
+export default function useContractReader(contracts, contractName, functionName, args, formatter, pollTime, onChange) {
   let adjustPollTime = 0;
   if (pollTime) {
     adjustPollTime = pollTime;
-  } else if (!pollTime && typeof args === "number") {
+  } else if (!pollTime && typeof formatter === "number") {
     // it's okay to pass poll time as last argument without args for the call
     adjustPollTime = args;
   }

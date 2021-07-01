@@ -3,6 +3,15 @@ import styled from 'styled-components'
 import { Typography, Input, Modal, Button, Card } from "antd";
 import { format } from 'date-fns'
 import { balanceItem } from './Wallet';
+import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from '../../hooks';
+import { useUserAddress } from 'eth-hooks';
+import { NETWORKS, DAI_ABI, DAI_ADDRESS } from '../../constants';
+import { useContract } from './Trader';
+import { BigNumber, utils } from 'ethers'
+import { Transactor } from "./../../helpers";
+
+const targetNetwork = NETWORKS.localhost;
+const { parseUnits, formatUnits } = utils
 
 const Wraper = styled.div`
   display: flex
@@ -49,60 +58,44 @@ const FormItem = styled.span`
   justify-content: space-between;
 `
 
-const NONE = 0
-const BUY = 'Buy'
-const SELL = 'Sell'
+const BuySell = ({ title, userProvider }) => {
 
-const BuySell = ({ title }) => {
-  const [selectedModal, setSelectedModal] = useState(NONE)
+  const [buyQty, setBuyQty] = useState(parseUnits('1'))
+  const [sellQty, setSellQty] = useState(1)
+
+  const address = useUserAddress(userProvider)
+  const contracts = useContractLoader(userProvider)
+  const gasPrice = useGasPrice(targetNetwork, "fast")
+  const FutureContract = useContract("Future", userProvider)
+  // const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
+  const quoteBidRate = useContractReader(contracts, "Future", "quoteBidRate", [buyQty], formatUnits)
+  // const purchasingPower = useContractReader(contracts, "UserAccount", "purchasingPower", [address, DAI_ADDRESS], formatUnits)
 
   const handleSubmitTrade = () => {
     console.log('called handle submit trade!')
   }
 
-  const form = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <FormItem>
-        <Typography>{`Amount To ${selectedModal}`}</Typography>
-        <Input style={{ width: 150 }}/>
-      </FormItem>
-      <FormItem>
-        <Typography>{`Slippage Tolerance`}</Typography>
-        <Input placeholder={'0.02'} style={{ width: 150 }}/>
-      </FormItem>
-    </div>
-  )
-
   return (
     <BuySellWrapper>
       <Cell>
-        {balanceItem('Price', '2083.00000000', true)}
-        <Button onClick={() => setSelectedModal(BUY)}>Buy</Button>
+        {balanceItem('Price', quoteBidRate, true)}
+        <Button>Buy</Button>
       </Cell>
       <Cell>
         {balanceItem('Price', '2083.00000000', true)}
-        <Button onClick={() => setSelectedModal(SELL)}>Sell</Button>
+        <Button>Sell</Button>
       </Cell>
-      <Modal
-        okText={selectedModal}
-        title={`${selectedModal} ${title}`}
-        visible={selectedModal !== NONE}
-        onOk={handleSubmitTrade}
-        onCancel={() => setSelectedModal(NONE)}
-      >
-        {form}
-      </Modal>
     </BuySellWrapper>
   )
 }
 
-export const Ticket = () => {
+export const Ticket = ({ userProvider }) => {
   const { baseCurr, quoteCurr, expiry } = useFuture('ETH', 'DAI')
   const title = `Future ${baseCurr}/${quoteCurr} - Exp. ${expiry}`
 
   return (
     <Card size="default" title={title}>
-      <BuySell title={title} />
+      <BuySell userProvider={userProvider} title={title} />
     </Card>
   )
 }

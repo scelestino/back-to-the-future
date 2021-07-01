@@ -88,15 +88,9 @@ const useAddress = (userSigner) => {
   return address
 }
 
-const useContract = (contractName, provider) => {
+export const useContract = (contractName, provider) => {
   const contracts = useContractLoader(provider)
-  const contract = contracts?.[contractName]
-  const address = contract?.address
-  const contractIsDeployed = useContractExistsAtAddress(provider, address);
-
-  if (!contractIsDeployed) {
-    throw new Error(`(useContract) Contract of name: ${contractName} does not exist`)
-  }
+  const contract = contracts ? contracts?.[contractName] : { }
 
   return contract
 }
@@ -118,34 +112,6 @@ const UserAccount = () => {
         />
     </>
   )
-}
-
-const DepositForm = ({ provider }) => {
-  const [deposit, setDeposit] = useState()
-  const [injectedProvider, localProvider] = useProvider()
-  const userProvider = useUserProvider(injectedProvider, localProvider)
-  const userSigner = useUserSigner(injectedProvider, localProvider)
-  const gasPrice = useGasPrice(targetNetwork, "fast");
-  const tx = Transactor(userProvider, gasPrice);
-  const writeContracts = useContractLoader(userProvider);
-
-  const onClick = async () => {
-    const result = await tx(writeContracts.UserAccount.deposit('0x6b175474e89094c44da98b954eedeac495271d0f', deposit), update => {
-      console.log('egill Transaction update: ', update)
-    })
-    
-    console.log('egill', result)
-  }
-
-  return (
-    <>
-      <Input 
-        onChange={e => setDeposit(e.target.value)}
-      />
-      <Button onClick={onClick}>Deposit</Button>
-    </>
-  )
-  
 }
 
 const Positions = () => {
@@ -187,12 +153,14 @@ const Positions = () => {
 }
 
 export const Trader = () => {
+  const [injectedProvider, localProvider] = useProvider()
+  const userProvider = useUserProvider(injectedProvider, localProvider)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
-      <Wallet />
+      <Wallet userProvider={userProvider} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20, width: 1000, height: '70vh', border: '1px solid grey' }}>
-        <Ticket />
+        <Ticket userProvider={userProvider} />
         {/* <Positions /> */}
         {/* <DepositForm /> */}
         {/* <UserAccount /> */}

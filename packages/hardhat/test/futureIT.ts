@@ -65,7 +65,7 @@ describe("Futures", async () => {
             wethPool = await poolFactory.deploy(weth.address, parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
             await wethPool.deployed()
             await weth.connect(lender).approve(wethPool.address, constants.MaxUint256)
-            await wethPool.connect(lender).deposit(utils.parseUnits("10"))
+            await wethPool.connect(lender).deposit(parseUnits("10"))
             expect(await weth.balanceOf(wethPool.address)).to.be.eq(utils.parseEther("10"))
 
             dai = IERC20__factory.connect(daiAddress, lender)
@@ -78,15 +78,15 @@ describe("Futures", async () => {
                 recipient: lender.address,
                 deadline: constants.MaxUint256,
                 amountIn: utils.parseEther("10"),
-                amountOutMinimum: utils.parseUnits("25000"),
+                amountOutMinimum: parseUnits("25000"),
                 sqrtPriceLimitX96: 0
             })
-            expect(await dai.balanceOf(lender.address)).to.be.gte(utils.parseUnits("25000"))
+            expect(await dai.balanceOf(lender.address)).to.be.gte(parseUnits("25000"))
             daiPool = await poolFactory.deploy(dai.address, parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75"))
             await daiPool.deployed()
             await dai.connect(lender).approve(daiPool.address, constants.MaxUint256)
-            await daiPool.connect(lender).deposit(utils.parseUnits("25000"))
-            expect(await dai.balanceOf(daiPool.address)).to.be.eq(utils.parseUnits("25000"))
+            await daiPool.connect(lender).deposit(parseUnits("25000"))
+            expect(await dai.balanceOf(daiPool.address)).to.be.eq(parseUnits("25000"))
 
             const futureFactory = (await ethers.getContractFactory('Future', owner)) as Future__factory
             future = await futureFactory.deploy(wethPool.address, daiPool.address, 500, uniswapFactory)
@@ -101,20 +101,32 @@ describe("Futures", async () => {
                 await daiPool.borrow(parseUnits("6250"), uniswapRouter)
                 expect(await daiPool.borrowingRate()).to.be.eq(parseUnits("0.0125"))
 
-                expect(await future.askQty()).to.be.eq(utils.parseUnits("7.408534273953079204"))
-                expect(await future.askRate()).to.be.eq(utils.parseUnits("2530.864987143440756470"))
-                expect(await future.spot()).to.be.eq(utils.parseUnits("2528.699078001282220713"))
-                expect(await future.bidQty()).to.be.eq(utils.parseUnits("9"))
-                expect(await future.bidRate()).to.be.eq(utils.parseUnits("2526.568301571271227325"))
+                expect(await future.askQty()).to.be.eq(parseUnits("7.408534273953079204"))
+                expect(await future.askRate()).to.be.eq(parseUnits("2530.864987143440756470"))
+                expect(await future.spot()).to.be.eq(parseUnits("2528.699078001282220713"))
+                expect(await future.bidQty()).to.be.eq(parseUnits("9.112149532710280367"))
+                expect(await future.bidRate()).to.be.eq(parseUnits("2526.568301571271227325"))
+            })
+
+            it("can quote the prices and liquidity", async () => {
+                expect(await wethPool.borrowingRateAfterLoan(parseUnits("1"))).to.be.eq(parseUnits("0.012307692307692307"))
+                expect(await daiPool.borrowingRateAfterLoan(parseUnits("7605.136698"))).to.be.eq(parseUnits("0.015210273396"))
+
+                expect(await future.askQty()).to.be.eq(parseUnits("9.886506550933825000"))
+                expect(await future.quoteAskRate(parseUnits("3"))).to.be.eq(parseUnits("2531.328246209070503319"))
+                expect(await future.spot()).to.be.eq(parseUnits("2528.699078001282220713"))
+                expect(await future.bidQty()).to.be.eq(parseUnits("10"))
+                expect(await future.quoteBidRate(parseUnits("1"))).to.be.eq(parseUnits("2526.568301571271227325"))
             })
         });
 
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
+                await daiPool.borrow(parseUnits("6250", 6), uniswapRouter)
                 const initialDaiHoldings = await dai.balanceOf(daiPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = utils.parseUnits("2531");
+                const price = parseUnits("2543");
                 const quantity = utils.parseEther("1");
 
                 await future.long(quantity, price)
@@ -124,15 +136,16 @@ describe("Futures", async () => {
             })
 
             it("can go short", async () => {
+                await wethPool.borrow(parseUnits("1"), uniswapRouter)
                 const initialDaiHoldings = await dai.balanceOf(daiPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = utils.parseUnits("2525");
-                const quantity = utils.parseEther("-1");
+                const price = parseUnits("2496");
+                const quantity = utils.parseEther("1");
 
                 await future.short(quantity, price)
 
-                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                expect(await weth.balanceOf(wethPool.address)).to.be.gt(initialWethHoldings.sub(quantity))
                 expect(await dai.balanceOf(daiPool.address)).to.be.gt(initialDaiHoldings)
             })
         })
@@ -149,7 +162,7 @@ describe("Futures", async () => {
         let usdtPool: Pool;
         let wethPool: Pool;
 
-        before(async () => {
+        beforeEach(async () => {
             await network.provider.request({
                 method: "hardhat_reset",
                 params: [{
@@ -172,7 +185,7 @@ describe("Futures", async () => {
             wethPool = await poolFactory.deploy(weth.address, parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
             await wethPool.deployed()
             await weth.connect(lender).approve(wethPool.address, constants.MaxUint256)
-            await wethPool.connect(lender).deposit(utils.parseUnits("10"))
+            await wethPool.connect(lender).deposit(parseUnits("10"))
             expect(await weth.balanceOf(wethPool.address)).to.be.eq(utils.parseEther("10"))
 
             usdt = IERC20__factory.connect(usdtAddress, lender)
@@ -185,15 +198,15 @@ describe("Futures", async () => {
                 recipient: lender.address,
                 deadline: constants.MaxUint256,
                 amountIn: utils.parseEther("10"),
-                amountOutMinimum: utils.parseUnits("25000", 6),
+                amountOutMinimum: parseUnits("25000", 6),
                 sqrtPriceLimitX96: 0
             })
-            expect(await usdt.balanceOf(lender.address)).to.be.gte(utils.parseUnits("25000", 6))
+            expect(await usdt.balanceOf(lender.address)).to.be.gte(parseUnits("25000", 6))
             usdtPool = await poolFactory.deploy(usdt.address, parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75"))
             await usdtPool.deployed()
             await usdt.connect(lender).approve(usdtPool.address, constants.MaxUint256)
-            await usdtPool.connect(lender).deposit(utils.parseUnits("25000", 6))
-            expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(utils.parseUnits("25000", 6))
+            await usdtPool.connect(lender).deposit(parseUnits("25000", 6))
+            expect(await usdt.balanceOf(usdtPool.address)).to.be.eq(parseUnits("25000", 6))
 
             const futureFactory = (await ethers.getContractFactory('Future', owner)) as Future__factory
             future = await futureFactory.deploy(wethPool.address, usdtPool.address, 500, uniswapFactory)
@@ -208,20 +221,32 @@ describe("Futures", async () => {
                 await usdtPool.borrow(parseUnits("6250", 6), uniswapRouter)
                 expect(await usdtPool.borrowingRate()).to.be.eq(parseUnits("0.0125"))
 
-                expect(await future.askQty()).to.be.eq(utils.parseUnits("7.389987004544287463"))
-                expect(await future.askRate()).to.be.eq(utils.parseUnits("2537.216911", 6))
-                expect(await future.spot()).to.be.eq(utils.parseUnits("2535.045566", 6))
-                expect(await future.bidQty()).to.be.eq(utils.parseUnits("9"))
-                expect(await future.bidRate()).to.be.eq(utils.parseUnits("2532.909442", 6))
+                expect(await future.askQty()).to.be.eq(parseUnits("7.389987004544287463"))
+                expect(await future.askRate()).to.be.eq(parseUnits("2537.216911", 6))
+                expect(await future.spot()).to.be.eq(parseUnits("2535.045566", 6))
+                expect(await future.bidQty()).to.be.eq(parseUnits("9.112149532710280367"))
+                expect(await future.bidRate()).to.be.eq(parseUnits("2532.909442", 6))
+            })
+
+            it("can quote the prices and liquidity", async () => {
+                expect(await wethPool.borrowingRateAfterLoan(parseUnits("1"))).to.be.eq(parseUnits("0.012307692307692307"))
+                expect(await usdtPool.borrowingRateAfterLoan(parseUnits("7605.136698", 6))).to.be.eq(parseUnits("0.015210273396"))
+
+                expect(await future.askQty()).to.be.eq(parseUnits("9.861755676229134888"))
+                expect(await future.quoteAskRate(parseUnits("3"))).to.be.eq(parseUnits("2537.687952", 6))
+                expect(await future.spot()).to.be.eq(parseUnits("2535.045566", 6))
+                expect(await future.bidQty()).to.be.eq(parseUnits("10"))
+                expect(await future.quoteBidRate(parseUnits("1"))).to.be.eq(parseUnits("2532.909442", 6))
             })
         });
 
         describe("Futures can be traded", async () => {
             it("can go long", async () => {
+                await usdtPool.borrow(parseUnits("6250", 6), uniswapRouter)
                 const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = utils.parseUnits("2537", 6);
+                const price = parseUnits("2582", 6);
                 const quantity = utils.parseEther("1");
 
                 await future.long(quantity, price)
@@ -231,15 +256,16 @@ describe("Futures", async () => {
             })
 
             it("can go short", async () => {
+                await wethPool.borrow(parseUnits("1"), uniswapRouter)
                 const initialUsdtHoldings = await usdt.balanceOf(usdtPool.address);
                 const initialWethHoldings = await weth.balanceOf(wethPool.address);
 
-                const price = utils.parseUnits("2533", 6);
-                const quantity = utils.parseEther("-1");
+                const price = parseUnits("2500", 6);
+                const quantity = utils.parseEther("1");
 
                 await future.short(quantity, price)
 
-                expect(await weth.balanceOf(wethPool.address)).to.be.eq(initialWethHoldings.add(quantity))
+                expect(await weth.balanceOf(wethPool.address)).to.be.gt(initialWethHoldings.sub(quantity))
                 expect(await usdt.balanceOf(usdtPool.address)).to.be.gt(initialUsdtHoldings)
             })
         })

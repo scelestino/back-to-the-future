@@ -8,11 +8,11 @@ import "../interfaces/IPool.sol";
 contract PoolStub is IPool {
 
     ERC20 public override token;
-    uint public override tokenWAD;
+    uint public override tokenScale;
 
     constructor(ERC20 _token) {
         token = _token;
-        tokenWAD = 10 ** _token.decimals();
+        tokenScale = 10 ** _token.decimals();
     }
 
     function borrow(uint amount, address recipient) external override {
@@ -27,6 +27,10 @@ contract PoolStub is IPool {
     }
 
     function borrowingRate() pure external override returns (uint rate) {
+        rate = 0;
+    }
+
+    function borrowingRateAfterLoan(uint) pure public override returns (uint rate) {
         rate = 0;
     }
 }

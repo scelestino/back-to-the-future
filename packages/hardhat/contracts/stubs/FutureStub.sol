@@ -40,16 +40,20 @@ contract FutureStub is IFuture {
         _askRate = askRate_;
     }
 
-    function long(int quantity, uint /*price*/) external view override returns (int amountReceived, int amountPaid) {
-        return (quantity, - quantity * int(askRate()) / int(10 ** base.token().decimals()));
+    function long(uint quantity, uint /*price*/) external view override returns (int amountReceived, int amountPaid) {
+        return (int(quantity), - int(quantity * askRate()) / int(10 ** base.token().decimals()));
     }
 
-    function short(int quantity, uint /*price*/) external view override returns (int amountPaid, int amountReceived) {
-        return (quantity, - quantity * int(bidRate()) / int(10 ** base.token().decimals()));
+    function short(uint quantity, uint /*price*/) external view override returns (int amountPaid, int amountReceived) {
+        return (-int(quantity), int(quantity * bidRate()) / int(10 ** base.token().decimals()));
     }
 
     function bidRate() public override view returns (uint256) {
         return _bidRate > 0 ? _bidRate : spot - (bidInterestRate * spot / 10000);
+    }
+
+    function quoteBidRate(uint) external override view returns (uint256 rate){
+        rate = bidRate();
     }
 
     function bidQty() external override view returns (uint qty) {
@@ -58,6 +62,10 @@ contract FutureStub is IFuture {
 
     function askRate() public override view returns (uint256) {
         return _askRate > 0 ? _askRate : spot + (askInterestRate * spot / 10000);
+    }
+
+    function quoteAskRate(uint) external override view returns (uint256 rate) {
+        rate = askRate();
     }
 
     function askQty() external override view returns (uint qty) {

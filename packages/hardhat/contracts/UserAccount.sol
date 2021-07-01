@@ -57,16 +57,17 @@ contract UserAccount {
                 //consider the rate that it'd paid to close the fill, aka the other side of the market
                 int marketRate = int(fill.openQuantity > 0 ? fill.future.bidRate() : fill.future.askRate());
                 // TODO how safe are this math operations?
-                margin += fill.openQuantity * marketRate / int(fill.leverage * fill.future.base().tokenWAD());
+                margin += fill.openQuantity * marketRate / int(fill.leverage * fill.future.base().tokenScale());
             }
         }
         pp = wallet(trader, token) - int(abs(margin));
     }
 
     function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage) external {
-        (uint liquidity, uint marketRate) = _quantity > 0 ? (future.askQty(), future.askRate()) : (future.bidQty(), future.bidRate());
-        require(price >= marketRate, "UserAccount: invalid price");
-        require(liquidity >= abs(_quantity), "UserAccount: invalid quantity");
+        uint absQty = abs(_quantity);
+        (uint liquidity, uint marketRate) = _quantity > 0 ? (future.askQty(), future.quoteAskRate(absQty)) : (future.bidQty(), future.quoteBidRate(absQty));
+        require(_quantity > 0 ? price >= marketRate : price <= marketRate , "UserAccount: invalid price");
+        require(liquidity >= absQty, "UserAccount: invalid quantity");
         require(_quantity != 0, "UserAccount: can't open a position with 0 amount");
         //TODO make maxLeverage configurable
         require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
@@ -74,11 +75,11 @@ contract UserAccount {
         Position storage p = positions[msg.sender][address(future)];
 
         if (abs(p.quantity + _quantity) > abs(p.quantity)) {
-            uint256 requiredMargin = PRBMath.mulDiv(abs(_quantity), price, leverage * future.base().tokenWAD());
+            uint256 requiredMargin = PRBMath.mulDiv(absQty, price, leverage * future.base().tokenScale());
             require(int(requiredMargin) <= purchasingPower(msg.sender, address(future.quote().token())), "UserAccount: not enough purchasing power");
         }
 
-        (int quantity, int cost) = _quantity > 0 ? future.long(_quantity, price) : future.short(_quantity, price);
+        (int quantity, int cost) = _quantity > 0 ? future.long(absQty, price) : future.short(absQty, price);
 
         settle(future, p, Fill(future, quantity, cost, leverage, 0, 0));
     }

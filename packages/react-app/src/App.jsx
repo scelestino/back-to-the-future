@@ -268,7 +268,7 @@ function App() {
     );
   }
 
-  console.log('address', address)
+  // console.log('address', address)
 
   return (
     <div className="App">

@@ -21,6 +21,7 @@
     "clean": "yarn workspace @scaffold-eth/hardhat clean",
     "chain": "yarn workspace @scaffold-eth/hardhat chain",
     "test": "yarn workspace @scaffold-eth/hardhat test",
+    "lint": "yarn workspace @scaffold-eth/hardhat solhint 'contracts/*.sol'",
     "start": "yarn workspace @scaffold-eth/react-app start",
     "compile": "yarn workspace @scaffold-eth/hardhat compile",
     "deploy": "yarn workspace @scaffold-eth/hardhat deploy",

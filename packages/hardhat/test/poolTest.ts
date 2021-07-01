@@ -142,7 +142,7 @@ describe("Pool", async () => {
             await sut.connect(lp1).deposit(parseUnits("300"))
             await sut.borrow(parseUnits("200"), uniswap)
 
-            await expect(sut.repay(parseUnits("300"), parseUnits("10"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: repay amount should be equals or lower than borrowed'");
+            await expect(sut.repay(parseUnits("300"), parseUnits("10"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount too big'");
 
         })
 
@@ -182,13 +182,13 @@ describe("Pool", async () => {
 
         it("shouldn't allow liquidity provider to withdraw more balance", async () => {
             await sut.connect(lp1).deposit(parseUnits("400"))
-            await expect(sut.connect(lp1).withdraw(parseUnits("500"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: withdraw amount greater than balance'")
+            await expect(sut.connect(lp1).withdraw(parseUnits("500"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount too big'")
         })
 
         it("shouldn't allow liquidity provider to withdraw more than its balance", async () => {
             await sut.connect(lp1).deposit(parseUnits("400"))
             await sut.connect(lp2).deposit(parseUnits("400"))
-            await expect(sut.connect(lp1).withdraw(parseUnits("500"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Pool: withdraw amount greater than sender balance'")
+            await expect(sut.connect(lp1).withdraw(parseUnits("500"))).eventually.to.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Amount gt than balance'")
         })
 
         it("should allow liquidity provider to withdraw", async () => {

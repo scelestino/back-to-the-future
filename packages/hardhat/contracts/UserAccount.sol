@@ -1,10 +1,10 @@
-pragma solidity >=0.6.0 <0.9.0;
+pragma solidity ^0.8.4;
 pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "prb-math/contracts/PRBMath.sol";
 
 import "./interfaces/IFuture.sol";
@@ -13,23 +13,17 @@ import "./interfaces/Validated.sol";
 contract UserAccount is Validated {
     using SafeERC20 for IERC20;
 
-    mapping(address => mapping(address => int256)) wallets;
+    mapping(address => mapping(address => int256)) public wallets;
     mapping(address => Fill[]) public fills;
     //TODO do we really need this?
-    mapping(address => mapping(address => Position)) positions;
+    mapping(address => mapping(address => Position)) public positions;
 
-    function deposit(address token, int256 amount)
-    validAddress(token)
-    validIAmount(amount)
-    external {
+    function deposit(address token, int256 amount) external validAddress(token) validIAmount(amount) {
         wallets[msg.sender][token] = wallets[msg.sender][token] + amount;
         IERC20(token).safeTransferFrom(msg.sender, address(this), uint(amount));
     }
 
-    function withdraw(address token, int256 amount)
-    validAddress(token)
-    validIAmount(amount)
-    external {
+    function withdraw(address token, int256 amount) external validAddress(token) validIAmount(amount) {
         int256 balance = wallets[msg.sender][token];
         require(balance >= amount, "UserAccount: not enough balance");
 
@@ -39,14 +33,6 @@ contract UserAccount is Validated {
 
     function noFills(address trader) external view returns (uint256) {
         return fills[trader].length;
-    }
-
-    function wallet(address trader, address token) public view returns (int256) {
-        return wallets[trader][token];
-    }
-
-    function position(address trader, address future) public view returns (Position memory) {
-        return positions[trader][future];
     }
 
     function purchasingPower(address trader, address token) public view returns (int pp) {
@@ -60,24 +46,22 @@ contract UserAccount is Validated {
                 margin += fill.openQuantity * marketRate / int(fill.leverage * fill.future.base().tokenScale());
             }
         }
-        pp = wallet(trader, token) - int(abs(margin));
+        pp = wallets[trader][token] - int(abs(margin));
     }
 
-    function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage)
-    validQuantity(_quantity)
-    external {
+    function placeOrder(IFuture future, int256 _quantity, uint256 price, uint8 leverage) external validQuantity(_quantity) {
         uint absQty = abs(_quantity);
         (uint liquidity, uint marketRate) = _quantity > 0 ? (future.askQty(), future.quoteAskRate(absQty)) : (future.bidQty(), future.quoteBidRate(absQty));
         require(_quantity > 0 ? price >= marketRate : price <= marketRate, "Price worse than market");
         require(liquidity >= absQty, "Not enough liquidity");
         //TODO make maxLeverage configurable
-        require(leverage > 0 && leverage < 10, "UserAccount: invalid leverage");
+        require(leverage > 0 && leverage < 10, "Invalid leverage");
 
         Position storage p = positions[msg.sender][address(future)];
 
         if (abs(p.quantity + _quantity) > abs(p.quantity)) {
             uint256 requiredMargin = PRBMath.mulDiv(absQty, price, leverage * future.base().tokenScale());
-            require(int(requiredMargin) <= purchasingPower(msg.sender, address(future.quote().token())), "UserAccount: not enough purchasing power");
+            require(int(requiredMargin) <= purchasingPower(msg.sender, address(future.quote().token())), "Not enough purchasing power");
         }
 
         (int quantity, int cost) = _quantity > 0 ? future.long(absQty, price) : future.short(absQty, price);
@@ -96,7 +80,8 @@ contract UserAccount is Validated {
                     wallets[msg.sender][address(future.quote().token())] = wallets[msg.sender][address(future.quote().token())] + pnl;
                     // TODO what to do with the PnL???
 
-                    int closeCost = signum(leftFill.openCost) * int(PRBMath.mulDiv(abs(leftFill.openQuantity), abs(rightFill.openCost), abs(rightFill.openQuantity)));
+                    int closeCost =
+                        signum(leftFill.openCost) * int(PRBMath.mulDiv(abs(leftFill.openQuantity), abs(rightFill.openCost), abs(rightFill.openQuantity)));
                     rightFill.openQuantity += leftFill.openQuantity;
                     rightFill.openCost += closeCost;
 
@@ -108,7 +93,8 @@ contract UserAccount is Validated {
                 } else {
                     // rightFill partially closes leftFill
                     Fill storage leftFill = traderFills[i];
-                    int closeCost = signum(rightFill.openCost) * int(PRBMath.mulDiv(abs(rightFill.openQuantity), abs(leftFill.openCost), abs(leftFill.openQuantity)));
+                    int closeCost =
+                        signum(rightFill.openCost) * int(PRBMath.mulDiv(abs(rightFill.openQuantity), abs(leftFill.openCost), abs(leftFill.openQuantity)));
                     leftFill.openCost += closeCost;
                     leftFill.openQuantity += rightFill.openQuantity;
                     leftFill.closeCost += rightFill.openCost;

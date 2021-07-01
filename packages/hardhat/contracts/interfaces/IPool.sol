@@ -1,7 +1,7 @@
-pragma solidity >=0.6.0 <0.9.0;
+pragma solidity ^0.8.4;
 //SPDX-License-Identifier: MIT
 
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 interface IPool {
     function token() view external returns (ERC20);

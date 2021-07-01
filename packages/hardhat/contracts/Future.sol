@@ -1,4 +1,4 @@
-pragma solidity >=0.6.0 <0.9.0;
+pragma solidity ^0.8.4;
 pragma abicoder v2;
 //SPDX-License-Identifier: MIT
 
@@ -26,7 +26,7 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     IPool public immutable override base;
     IPool public immutable override quote;
     IUniswapV3Pool public immutable pool;
-    PoolAddress.PoolKey poolKey;
+    PoolAddress.PoolKey public poolKey;
 
     //TODO make this a parameter of the actual operations
     DateTimeLibrary.Date public expiry;
@@ -55,9 +55,9 @@ contract Future is IFuture, IUniswapV3SwapCallback {
     ) external override {
         require(
             msg.sender == address(pool),
-            "Caller was not the expected UNI pool"
+            "Caller was not UNI pool"
         );
-        require(amount0Delta > 0 || amount1Delta > 0);
+        require(amount0Delta > 0 || amount1Delta > 0, "Invalid amount deltas");
 
         bool amount0isBase = address(base.token()) == poolKey.token0;
         if (amount0Delta > 0) {

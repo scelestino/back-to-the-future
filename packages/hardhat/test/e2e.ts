@@ -150,7 +150,7 @@ describe("E2E", async () => {
                     expect(fill.openQuantity).to.be.eq(quantity)
                     expect(fill.openCost).to.be.eq(expectedCost)
 
-                    const position = await traderAccount.position(trader1.address, future.address);
+                    const position = await traderAccount.positions(trader1.address, future.address);
                     expect(position.quantity).to.be.eq(quantity)
                     expect(position.cost).to.be.eq(expectedCost)
 
@@ -160,7 +160,7 @@ describe("E2E", async () => {
                     expect(await (isLong ? future.quoteAskRate(quantity) : future.quoteBidRate(quantity.abs()))).to.be.eq(price2)
 
                     return expect(traderAccount.placeOrder(future.address, quantity, price2WithSlippage, 5))
-                        .to.be.eventually.rejectedWith(Error, "UserAccount: not enough purchasing power")
+                        .to.be.eventually.rejectedWith(Error, "Not enough purchasing power")
                 })
             });
     })

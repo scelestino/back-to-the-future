@@ -47,6 +47,9 @@ jobs:
       - name: Build application
         run: yarn compile
 
+      - name: Check linting
+        run: yarn lint
+
       - name: Run tests
         env:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}

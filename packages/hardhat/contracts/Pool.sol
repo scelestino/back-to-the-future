@@ -1,9 +1,9 @@
-pragma solidity >=0.6.0 <0.9.0;
+pragma solidity ^0.8.4;
 //SPDX-License-Identifier: MIT
 
 import "hardhat/console.sol";
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "prb-math/contracts/PRBMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
@@ -15,15 +15,15 @@ contract Pool is IPool, Validated {
     using PRBMathUD60x18 for uint256;
 
     // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
-    uint256 public immutable OPTIMAL_UTILIZATION_RATE;
+    uint256 public immutable optimalUtilizationRate;
     // This constant represents the excess utilization rate above the optimal.
     // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
-    uint256 public immutable EXCESS_UTILIZATION_RATE;
+    uint256 public immutable excessUtilizationRate;
     // Base variable borrow rate when Utilization rate = 0.
     uint256 internal immutable baseBorrowRate;
-    // Slope of the variable interest curve when utilization rate > 0 and <= OPTIMAL_UTILIZATION_RATE.
+    // Slope of the variable interest curve when utilization rate > 0 and <= optimalUtilizationRate.
     uint256 internal immutable slope1;
-    // Slope of the variable interest curve when utilization rate > OPTIMAL_UTILIZATION_RATE.
+    // Slope of the variable interest curve when utilization rate > optimalUtilizationRate.
     uint256 internal immutable slope2;
 
 
@@ -33,7 +33,7 @@ contract Pool is IPool, Validated {
     uint256 public balance = 0;
     uint256 public borrowed = 0;
     uint256 public totalShare = 0;
-    mapping(address => uint256) shares;
+    mapping(address => uint256) private shares;
 
     constructor (
         ERC20 _token,
@@ -44,14 +44,14 @@ contract Pool is IPool, Validated {
     ) {
         token = _token;
         tokenScale = 10 ** _token.decimals();
-        OPTIMAL_UTILIZATION_RATE = _optimalUtilizationRate;
-        EXCESS_UTILIZATION_RATE = PRBMathUD60x18.SCALE - _optimalUtilizationRate;
+        optimalUtilizationRate = _optimalUtilizationRate;
+        excessUtilizationRate = PRBMathUD60x18.SCALE - _optimalUtilizationRate;
         baseBorrowRate = _baseBorrowRate;
         slope1 = _slope1;
         slope2 = _slope2;
     }
 
-    function deposit(uint256 amount) validUAmount(amount) external returns (uint256 share) {
+    function deposit(uint256 amount) external validUAmount(amount) returns (uint256 share) {
         share = totalShare > 0
         ? PRBMath.mulDiv(amount, totalShare, balance)
         : amount * (10 ** (18 - token.decimals()));
@@ -64,12 +64,12 @@ contract Pool is IPool, Validated {
 
     }
 
-    function withdraw(uint amount) validUAmount(amount) external {
-        require(balance >= amount, "Pool: withdraw amount greater than balance");
+    function withdraw(uint amount) external validUAmount(amount) {
+        require(balance >= amount, "Amount too big");
 
         uint256 share = PRBMath.mulDiv(totalShare, amount, balance);
 
-        require(shares[msg.sender] >= share, "Pool: withdraw amount greater than sender balance");
+        require(shares[msg.sender] >= share, "Amount gt than balance");
 
         balance = balance - amount;
         totalShare = totalShare - share;
@@ -92,39 +92,39 @@ contract Pool is IPool, Validated {
     }
 
     //TODO add security
-    function borrow(uint amount, address recipient) validUAmount(amount) validAddress(recipient) external override {
+    function borrow(uint amount, address recipient) external validUAmount(amount) validAddress(recipient) override {
         borrowed = borrowed + amount;
         token.safeTransfer(recipient, amount);
     }
 
     //TODO add security
-    function repay(uint amount, uint interest) validUAmount(amount) validUAmount(interest) external override {
-        require(borrowed >= amount, "Pool: repay amount should be equals or lower than borrowed");
+    function repay(uint amount, uint interest) external validUAmount(amount) validUAmount(interest) override {
+        require(borrowed >= amount, "Amount too big");
 
         balance = balance + interest;
         borrowed = borrowed - amount;
     }
 
-    function available() view external override returns (uint qty) {
+    function available() external view override returns (uint qty) {
         qty = balance - borrowed;
     }
 
-    function borrowingRate() view external override returns (uint rate) {
+    function borrowingRate() external view override returns (uint rate) {
         rate = borrowingRateAfterLoan(0);
     }
 
-    function borrowingRateAfterLoan(uint amount) view public override returns (uint rate) {
+    function borrowingRateAfterLoan(uint amount) public view override returns (uint rate) {
         if (balance == 0) {
             rate = baseBorrowRate;
         } else {
             uint balanceAfterLoan = amount + borrowed;
             uint utilizationRate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
 
-            if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-                uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).div(EXCESS_UTILIZATION_RATE);
+            if (utilizationRate > optimalUtilizationRate) {
+                uint256 excessUtilizationRateRatio = (utilizationRate - optimalUtilizationRate).div(excessUtilizationRate);
                 rate = baseBorrowRate + slope1 + slope2.mul(excessUtilizationRateRatio);
             } else {
-                rate = baseBorrowRate + utilizationRate.mul(slope1).div(OPTIMAL_UTILIZATION_RATE);
+                rate = baseBorrowRate + utilizationRate.mul(slope1).div(optimalUtilizationRate);
             }
         }
     }

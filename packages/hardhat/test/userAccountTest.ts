@@ -81,7 +81,7 @@ describe("User Accounts", async () => {
         }
     })
 
-    describe("Account wallets", async () => {
+    describe("Account walletss", async () => {
         it("should support trader deposits", async () => {
             const trader1Account = userAccount.connect(trader1)
             const trader2Account = userAccount.connect(trader2)
@@ -92,7 +92,7 @@ describe("User Accounts", async () => {
             expect(await lusd.balanceOf(trader1.address)).to.be.eq(parseUnits("24000"))
             expect(await lusd.balanceOf(userAccount.address)).to.be.eq(parseUnits("1000"))
 
-            expect(await trader1Account.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("1000"))
+            expect(await trader1Account.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("1000"))
 
             // trader2 deposit
             await trader2Account.deposit(lusd.address, parseUnits("9500"))
@@ -100,7 +100,7 @@ describe("User Accounts", async () => {
             expect(await lusd.balanceOf(trader2.address)).to.be.eq(parseUnits("15500"))
             expect(await lusd.balanceOf(userAccount.address)).to.be.eq(parseUnits("10500"))
 
-            expect(await trader2Account.wallet(trader2.address, lusd.address)).to.be.eq(parseUnits("9500"))
+            expect(await trader2Account.wallets(trader2.address, lusd.address)).to.be.eq(parseUnits("9500"))
 
             // subsequent trader1 deposit
             await trader1Account.deposit(lusd.address, parseUnits("500"))
@@ -108,7 +108,7 @@ describe("User Accounts", async () => {
             expect(await lusd.balanceOf(trader1.address)).to.be.eq(parseUnits("23500"))
             expect(await lusd.balanceOf(userAccount.address)).to.be.eq(parseUnits("11000"))
 
-            expect(await trader1Account.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("1500"))
+            expect(await trader1Account.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("1500"))
         })
 
         it("should support trader withdrawals", async () => {
@@ -123,9 +123,9 @@ describe("User Accounts", async () => {
             expect(await lusd.balanceOf(trader1.address)).to.be.eq(parseUnits("24400"))
             expect(await lusd.balanceOf(userAccount.address)).to.be.eq(parseUnits("10100"))
 
-            expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("600"))
+            expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("600"))
 
-            expect(await trader2Account.wallet(trader2.address, lusd.address)).to.be.eq(parseUnits("9500"))
+            expect(await trader2Account.wallets(trader2.address, lusd.address)).to.be.eq(parseUnits("9500"))
 
             //second withdrawal
             await traderAccount.withdraw(lusd.address, parseUnits("100"))
@@ -133,9 +133,9 @@ describe("User Accounts", async () => {
             expect(await lusd.balanceOf(trader1.address)).to.be.eq(parseUnits("24500"))
             expect(await lusd.balanceOf(userAccount.address)).to.be.eq(parseUnits("10000"))
 
-            expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("500"))
+            expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("500"))
 
-            expect(await trader2Account.wallet(trader2.address, lusd.address)).to.be.eq(parseUnits("9500"))
+            expect(await trader2Account.wallets(trader2.address, lusd.address)).to.be.eq(parseUnits("9500"))
         })
 
         it("should always keep a consistent state", async () => {
@@ -148,7 +148,7 @@ describe("User Accounts", async () => {
             await fc.assert(fc.asyncProperty(bnArb, fc.boolean(), async (amount, isDeposit) => {
                 const traderTokenBalance = await lusd.balanceOf(trader1.address);
                 const accountTokenBalance = await lusd.balanceOf(userAccount.address);
-                const traderWalletBalance = await traderAccount.wallet(trader1.address, lusd.address);
+                const traderWalletBalance = await traderAccount.wallets(trader1.address, lusd.address);
 
                 if (isDeposit) {
                     const deposit = traderAccount.deposit(lusd.address, amount);
@@ -160,7 +160,7 @@ describe("User Accounts", async () => {
                         await deposit
                         expect(await lusd.balanceOf(trader1.address)).to.be.eq(traderTokenBalance.sub(amount))
                         expect(await lusd.balanceOf(userAccount.address)).to.be.eq(accountTokenBalance.add(amount))
-                        expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(traderWalletBalance.add(amount))
+                        expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(traderWalletBalance.add(amount))
                     }
                 } else {
                     const withdraw = traderAccount.withdraw(lusd.address, amount);
@@ -172,7 +172,7 @@ describe("User Accounts", async () => {
                         await withdraw
                         expect(await lusd.balanceOf(trader1.address)).to.be.eq(traderTokenBalance.add(amount))
                         expect(await lusd.balanceOf(userAccount.address)).to.be.eq(accountTokenBalance.sub(amount))
-                        expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(traderWalletBalance.sub(amount))
+                        expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(traderWalletBalance.sub(amount))
                     }
                 }
             }), {endOnFailure: true, verbose: true})
@@ -202,7 +202,7 @@ describe("User Accounts", async () => {
                 expect(fill.openQuantity).to.be.eq(quantity)
                 expect(fill.openCost).to.be.eq(cost)
 
-                const position = await traderAccount.position(trader1.address, future.address);
+                const position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(quantity)
                 expect(position.cost).to.be.eq(cost)
                 // Used margin so far 2 * 2500 / 5 = 1000
@@ -217,7 +217,7 @@ describe("User Accounts", async () => {
                 expect(fill.openQuantity).to.be.eq(quantity)
                 expect(fill.openCost).to.be.eq(cost)
 
-                const position2 = await traderAccount.position(trader1.address, future.address);
+                const position2 = await traderAccount.positions(trader1.address, future.address);
                 expect(position2.quantity).to.be.eq(quantity.mul(2))
                 expect(position2.cost).to.be.eq(cost.mul(2))
                 // Used margin so far (2+2) * 2500 / 5 = 2000
@@ -225,7 +225,7 @@ describe("User Accounts", async () => {
 
                 // Fails as the total margin required is (2+2+2) * 2500 / 5 = 3000
                 return expect(traderAccount.placeOrder(future.address, quantity, price, 5))
-                    .to.be.eventually.rejectedWith(Error, "UserAccount: not enough purchasing power")
+                    .to.be.eventually.rejectedWith(Error, "VM Exception while processing transaction: reverted with reason string 'Not enough purchasing power'")
             })
         });
 
@@ -246,7 +246,7 @@ describe("User Accounts", async () => {
 
                 let traderPrice = await (openQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(deposit)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                 let fill = await traderAccount.fills(trader1.address, 0);
@@ -257,7 +257,7 @@ describe("User Accounts", async () => {
                 expect(fill.closeQuantity).to.be.eq(0)
                 expect(fill.closeCost).to.be.eq(0)
 
-                let position = await traderAccount.position(trader1.address, future.address);
+                let position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(openQty)
                 expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
@@ -274,12 +274,12 @@ describe("User Accounts", async () => {
                 expect(fill.closeQuantity).to.be.eq(closeQty)
                 expect(fill.closeCost).to.be.eq(closeCost)
 
-                position = await traderAccount.position(trader1.address, future.address);
+                position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(fill.openQuantity)
                 expect(position.cost).to.be.eq(fill.openCost)
 
                 //PnL == 200
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("900"))
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("900"))
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower2)
             })
         });
@@ -301,7 +301,7 @@ describe("User Accounts", async () => {
 
                 let traderPrice = await (openQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(deposit)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
                 let fill = await traderAccount.fills(trader1.address, 0);
@@ -312,7 +312,7 @@ describe("User Accounts", async () => {
                 expect(fill.closeQuantity).to.be.eq(0)
                 expect(fill.closeCost).to.be.eq(0)
 
-                let position = await traderAccount.position(trader1.address, future.address);
+                let position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(openQty)
                 expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
@@ -322,12 +322,12 @@ describe("User Accounts", async () => {
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(0);
 
-                position = await traderAccount.position(trader1.address, future.address);
+                position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(0)
                 expect(position.cost).to.be.eq(0)
 
                 //PnL == 400
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
             })
         });
@@ -349,11 +349,11 @@ describe("User Accounts", async () => {
 
                 let traderPrice = await (openQty.gt(0) ? future.askRate() : future.bidRate())
                 await traderAccount.placeOrder(future.address, openQty, traderPrice, 5)
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(deposit)
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(deposit)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
 
-                let position = await traderAccount.position(trader1.address, future.address);
+                let position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(openQty)
                 expect(position.cost).to.be.eq(openCost)
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower)
@@ -363,24 +363,24 @@ describe("User Accounts", async () => {
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(1);
 
-                position = await traderAccount.position(trader1.address, future.address);
+                position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(openQty.div(2))
                 expect(position.cost).to.be.eq(openCost.div(2))
 
                 //PnL == 200
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("900"))
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("900"))
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(purchasingPower2)
 
                 await traderAccount.placeOrder(future.address, closeQty, traderPrice, 5)
 
                 expect(await traderAccount.noFills(trader1.address)).to.be.eq(0);
 
-                position = await traderAccount.position(trader1.address, future.address);
+                position = await traderAccount.positions(trader1.address, future.address);
                 expect(position.quantity).to.be.eq(0)
                 expect(position.cost).to.be.eq(0)
 
                 //PnL == 400
-                expect(await traderAccount.wallet(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
+                expect(await traderAccount.wallets(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
                 expect(await traderAccount.purchasingPower(trader1.address, lusd.address)).to.be.eq(parseUnits("700"))
             })
         });

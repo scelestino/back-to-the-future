@@ -126,14 +126,18 @@ contract Pool is IPool {
     }
 
     function borrowingRateAfterLoan(uint amount) view public override returns (uint rate) {
-        uint balanceAfterLoan = amount + borrowed;
-        uint utilizationRate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
-
-        if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
-            uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).div(EXCESS_UTILIZATION_RATE);
-            rate = baseBorrowRate + slope1 + slope2.mul(excessUtilizationRateRatio);
+        if (balance == 0) {
+            rate = 0;
         } else {
-            rate = baseBorrowRate + utilizationRate.mul(slope1).div(OPTIMAL_UTILIZATION_RATE);
+            uint balanceAfterLoan = amount + borrowed;
+            uint utilizationRate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
+
+            if (utilizationRate > OPTIMAL_UTILIZATION_RATE) {
+                uint256 excessUtilizationRateRatio = (utilizationRate - OPTIMAL_UTILIZATION_RATE).div(EXCESS_UTILIZATION_RATE);
+                rate = baseBorrowRate + slope1 + slope2.mul(excessUtilizationRateRatio);
+            } else {
+                rate = baseBorrowRate + utilizationRate.mul(slope1).div(OPTIMAL_UTILIZATION_RATE);
+            }
         }
     }
 }

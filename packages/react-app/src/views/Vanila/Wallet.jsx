@@ -1,14 +1,10 @@
-import React, { useState } from 'react'
-import styled from 'styled-components'
-import { Typography, Input, Modal, Button } from "antd";
-import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from '../../hooks';
-import { useUserAddress } from 'eth-hooks';
-import { NETWORKS, DAI_ABI, DAI_ADDRESS } from '../../constants';
-import { useContract } from './Trader';
-import { BigNumber, utils } from 'ethers'
+import { Button, Input, Modal, Typography } from "antd";
+import { utils } from 'ethers';
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import { DAI_ADDRESS } from '../../constants';
+import { useAddress, useBalance, useContracts, useDaiContract, useGasPrice, useProvider, usePurchasingPower } from '../../services';
 import { Transactor } from "./../../helpers";
-
-const targetNetwork = NETWORKS.localhost;
 const { parseUnits, formatUnits } = utils
 
 const Wrapper = styled.div`
@@ -52,17 +48,16 @@ export const balanceItem = (text, number, alignStart) => (
   </div>
 )
 
-export const Wallet = ({
-  userProvider,
-}) => {
-  const address = useUserAddress(userProvider)
-  const contracts = useContractLoader(userProvider)
-  const gasPrice = useGasPrice(targetNetwork, "fast")
-  const UserAccountContract = useContract("UserAccount", userProvider)
-  const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
-  const balance = useContractReader(contracts, "UserAccount", "wallet", [address, DAI_ADDRESS], formatUnits)
-  const purchasingPower = useContractReader(contracts, "UserAccount", "purchasingPower", [address, DAI_ADDRESS], formatUnits)
-  const margin = Math.abs(Number(balance) - Number(purchasingPower) || 0) || '0000.0000'
+export const Wallet = () => {
+  const userProvider = useProvider()
+  const address = useAddress()
+  const contracts = useContracts()
+  const gasPrice = useGasPrice('localhost')
+  const UserAccountContract = contracts.UserAccount
+  const DAIContract = useDaiContract()
+  const [, formattedBalance] = useBalance(address, formatUnits)
+  const [, purchasingPower] = usePurchasingPower(address, formatUnits)
+  const margin = Math.abs(Number(formattedBalance) - Number(purchasingPower) || 0) || '0000.0000'
 
   const [modalSelected, setModalSelected] = useState(NONE)
   const [amount, setAmount] = useState()
@@ -109,7 +104,7 @@ export const Wallet = ({
           {divider}
           {balanceItem('Margin', margin)}
           {divider}
-          {balanceItem('Balance', balance)}
+          {balanceItem('Balance', formattedBalance)}
         </div>
         <div>
           <Button onClick={() => setModalSelected(DEPOSIT)}>Deposit</Button>

@@ -1,21 +1,14 @@
-import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
-import { Typography, Input, Modal, Button, Card } from "antd";
-import { format } from 'date-fns'
-import { balanceItem } from './Wallet';
-import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from '../../hooks';
-import { useUserAddress } from 'eth-hooks';
-import { NETWORKS, DAI_ABI, DAI_ADDRESS } from '../../constants';
-import { useContract } from './Trader';
-import { BigNumber, utils } from 'ethers'
+import { Button, Card, Input } from "antd";
+import { format } from 'date-fns';
+import { utils } from 'ethers';
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import { useAddress, useAskRate, useBidRate, useContracts, useGasPrice, usePositions, useProvider } from '../../services';
 import { Transactor } from "./../../helpers";
+import { Positions } from "./Positions";
+import { balanceItem } from './Wallet';
 
-const targetNetwork = NETWORKS.localhost;
 const { parseUnits, formatUnits } = utils
-
-const Wraper = styled.div`
-  display: flex
-`
 
 const hardcodedExpiryTime = 1627776000
 
@@ -43,7 +36,7 @@ const Cell = ({ children }) => {
       justifyContent: 'space-between',
       backgroundColor: 'rgb(48, 48, 48)',
       height: 50,
-      width: 340,
+      width: 640,
       border: '1px solid white',
       borderRadius: '5px'
     }}>
@@ -52,72 +45,69 @@ const Cell = ({ children }) => {
   )
 }
 
-const FormItem = styled.span`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-`
+const calculateBuyPriceWithSlippage = (price, slippageTolerance) => {
+  const slippageMultiplier = String(1000 + slippageTolerance)
+  return price.mul(slippageMultiplier).div('1000')
+}
 
-const BuySell = ({ title, userProvider }) => {
+// TODO review with bruno
+const calculateSellPriceWithSlippage = (price, slippageTolerance) => {
+  const slippageDivider = String(1000 + slippageTolerance)
+  return price.div(slippageDivider).mul('1000')
+}
 
-  const [buyQty, setBuyQty] = useState('1')
-  const [sellQty, setSellQty] = useState('1')
+const BuySell = ({ userProvider }) => {
 
-  const address = useUserAddress(userProvider)
-  const contracts = useContractLoader(userProvider)
-  const gasPrice = useGasPrice(targetNetwork, "fast")
-  const FutureContract = useContract("Future", userProvider)
-  // const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
-  const quoteBidRate = useContractReader(contracts, "Future", "quoteBidRate", [parseUnits(buyQty)])
-  const quoteAskRate = useContractReader(contracts, "Future", "quoteAskRate", [parseUnits(sellQty)])
-  const noFills = useContractReader(contracts, "UserAccount", "noFills", [address], (bigNum) => formatUnits(bigNum, 0))
-  // const purchasingPower = useContractReader(contracts, "UserAccount", "purchasingPower", [address, DAI_ADDRESS], formatUnits)
+  const [leverage] = useState(5)
+  const [slippageTolerance] = useState(50) // 50 pips == 0.5% or 0.005 fractional
+  const [buyQty, setBuyQty] = useState(1)
+  const [sellQty, setSellQty] = useState(1)
+  const contracts = useContracts()
+  const gasPrice = useGasPrice('localhost')
+  const FutureContract = contracts.Future
+  const [rawQuoteBidRate, formattedQuoteBidRate] = useBidRate('1', formatUnits)
+  const [rawQuoteAskRate, formattedQuoteAskRate] = useAskRate('1', formatUnits)
 
-  useEffect(() => {
-    console.log('noFills', noFills)
-    // [1, 2]
-    const getPositions = async () => {
-      // [1, 1]
-      const arr = Array(Number(noFills)).fill(1)
-      const resultArr = arr.map(async (_, i) => {
-        console.log(`position ${i}`, await contracts.UserAccount.fills(address, i))
-      })
-      // console.log('positions res', resultArr)
-    }
-    if (noFills !== undefined) {
-      getPositions()
-    }
-  }, [noFills])
-
-  const handleSubmitTrade = async (qty, isBuy) => {
+  const handleSubmitTrade = async (qty) => {
     const tx = Transactor(userProvider, gasPrice)
-    if (isBuy) {
-      const priceWithSlippage = '2550'
-      await tx(contracts.UserAccount.placeOrder(FutureContract.address, parseUnits(buyQty), parseUnits(priceWithSlippage), 5));
+    if (qty > 0) {
+      const price = calculateBuyPriceWithSlippage(rawQuoteAskRate, slippageTolerance)
+      const quantity = parseUnits(String(qty))
+      await tx(contracts.UserAccount.placeOrder(FutureContract.address, quantity, price, leverage));
+    } else if (qty < 0) {
+      const price = calculateSellPriceWithSlippage(rawQuoteBidRate, slippageTolerance)
+      const quantity = parseUnits(String(qty))
+      await tx(contracts.UserAccount.placeOrder(FutureContract.address, quantity, price, leverage))
     }
   }
 
   return (
     <BuySellWrapper>
       <Cell>
-        {balanceItem('Price', quoteAskRate ? formatUnits(quoteAskRate) : '-', true)}
-        <Button onClick={() => handleSubmitTrade(buyQty, true)}>Buy</Button>
+        <Input style={{ width: 100 }} onChange={({ target: { value }}) => setBuyQty(Number(value))} />
+        {balanceItem('Price', formattedQuoteAskRate, true)}
+        <Button onClick={() => handleSubmitTrade(buyQty)}>Buy</Button>
       </Cell>
       <Cell>
-        {balanceItem('Price', quoteBidRate ? formatUnits(quoteBidRate) : '-', true)}
-        <Button>Sell</Button>
+        <Input style={{ width: 100 }} onChange={({ target: { value }}) => setSellQty(Number(value) * - 1)} />
+        {balanceItem('Price', formattedQuoteBidRate, true)}
+        <Button onClick={() => handleSubmitTrade(sellQty)} >Sell</Button>
       </Cell>
     </BuySellWrapper>
   )
 }
 
-export const Ticket = ({ userProvider }) => {
+export const Ticket = () => {
+  const userProvider = useProvider()
+  const address = useAddress()
   const { baseCurr, quoteCurr, expiry } = useFuture('ETH', 'DAI')
+  const position = usePositions(address)
   const title = `Future ${baseCurr}/${quoteCurr} - Exp. ${expiry}`
 
   return (
     <Card size="default" title={title}>
       <BuySell userProvider={userProvider} title={title} />
+      {position && <Positions {...position}  />}
     </Card>
   )
 }

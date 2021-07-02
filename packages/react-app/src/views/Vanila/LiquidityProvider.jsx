@@ -68,7 +68,8 @@ export const LiquidityProvider = () => {
           border: "1px solid grey",
         }}
       >
-        <Pool userProvider={userProvider} />
+        <Pool userProvider={userProvider} tokenName="WETH" poolName="WETHPool" />
+        <Pool userProvider={userProvider} tokenName="DAI" poolName="DAIPool" />
       </div>
     </div>
   );

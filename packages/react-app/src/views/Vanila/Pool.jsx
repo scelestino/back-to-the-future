@@ -4,7 +4,7 @@ import { Typography, Input, Modal, Button } from "antd";
 import { utils } from "ethers";
 import { useUserAddress } from "eth-hooks";
 import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from "../../hooks";
-import { NETWORKS, DAI_ABI, DAI_ADDRESS } from "../../constants";
+import { NETWORKS, DAI_ABI, DAI_ADDRESS, WETH_ADDRESS, WETH_ABI} from "../../constants";
 import { Transactor } from "../../helpers";
 
 const targetNetwork = NETWORKS.localhost;
@@ -44,32 +44,33 @@ const NONE = 0;
 const DEPOSIT = "Deposit";
 const WITHDRAW = "Withdraw";
 
-export const balanceItem = (text, number, alignStart) => (
+export const balanceItem = (tokenName, text, number, alignStart) => (
   <div style={{ display: "flex", flexDirection: "column" }}>
     <Typography style={{ alignSelf: alignStart ? "flex-start" : "inherit" }}>{text}</Typography>
-    <Typography>{`${number} DAI`}</Typography>
+    <Typography>{`${number} ${tokenName}`}</Typography>
   </div>
 );
 
 const useMyContractReader = userProvider => {
   const localContracts = useContractLoader(userProvider);
   const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI);
+  const WETHContract = useExternalContractLoader(userProvider, WETH_ADDRESS, WETH_ABI);
   const [contracts, setContracts] = useState();
   useEffect(() => {
-    if (localContracts && DAIContract) {
-      setContracts({ ...localContracts, DAI: DAIContract });
+    if (localContracts && DAIContract && WETHContract) {
+      setContracts({ ...localContracts, DAI: DAIContract, WETH: WETHContract });
     }
-  }, [localContracts, DAIContract]);
+  }, [localContracts, DAIContract, WETHContract]);
   return contracts;
 };
 
-export const Pool = ({ userProvider }) => {
+export const Pool = ({ userProvider, tokenName, poolName }) => {
   const address = useUserAddress(userProvider);
   const contracts = useMyContractReader(userProvider);
   const gasPrice = useGasPrice(targetNetwork, "fast");
 
-  const walletBalance = useContractReader(contracts, "DAI", "balanceOf", [address], formatUnits);
-  const poolBalance = useContractReader(contracts, "DAIPool", "balanceOf", [address], formatUnits);
+  const walletBalance = useContractReader(contracts, tokenName, "balanceOf", [address], formatUnits);
+  const poolBalance = useContractReader(contracts, poolName, "balanceOf", [address], formatUnits);
 
   const [modalSelected, setModalSelected] = useState(NONE);
   const [amount, setAmount] = useState();
@@ -77,16 +78,16 @@ export const Pool = ({ userProvider }) => {
   const handleSubmit = async isDeposit => {
     const tx = Transactor(userProvider, gasPrice);
     if (isDeposit) {
-      await tx(contracts.DAI.approve(contracts.DAIPool.address, amount), r => {
+      await tx(contracts[tokenName].approve(contracts[poolName].address, amount), r => {
         console.log(r);
       });
-      await tx(contracts.DAIPool.deposit(amount), async result => {
+      await tx(contracts[poolName].deposit(amount), async result => {
         setModalSelected(NONE);
         setAmount("0");
         console.log("deposit result", await result);
       });
     } else {
-      await tx(contracts.DAIPool.withdraw(amount), async result => {
+      await tx(contracts[poolName].withdraw(amount), async result => {
         setModalSelected(NONE);
         setAmount("0");
         console.log("withdraw result", await result);
@@ -99,7 +100,7 @@ export const Pool = ({ userProvider }) => {
       <Typography>Amount</Typography>
       <Input
         onChange={({ target: { value } }) => setAmount(parseUnits(value || "0"))}
-        placeholder={`DAI to ${modalSelected}`}
+        placeholder={`${tokenName} to ${modalSelected}`}
         style={{ width: 150 }}
       />
     </InnerWrapper>
@@ -110,11 +111,11 @@ export const Pool = ({ userProvider }) => {
   return (
     <Wrapper>
       <InnerWrapper>
-        <Typography style={{ fontSize: 20 }}>DAI</Typography>
+        <Typography style={{ fontSize: 20 }}>{tokenName}</Typography>
         <div style={{ display: "flex", flexDirection: "row" }}>
-          {balanceItem("Wallet Balance", walletBalance)}
+          {balanceItem(tokenName, "Wallet Balance", walletBalance)}
           {divider}
-          {balanceItem("Pool Balance", poolBalance)}
+          {balanceItem(tokenName, "Pool Balance", poolBalance)}
         </div>
         <div>
           <Button onClick={() => setModalSelected(DEPOSIT)}>Deposit</Button>

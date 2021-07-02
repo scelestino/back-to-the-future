@@ -1,1 +1,1 @@
-module.exports = ["DAIPool","Future","UserAccount","WETHPool","DAI","WETH"];
+module.exports = ["DAIPool","Future","UserAccount","WETHPool"];

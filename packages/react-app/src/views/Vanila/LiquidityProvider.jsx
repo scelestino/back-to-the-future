@@ -1,129 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
 
-import { NETWORKS, INFURA_ID, DAI_ABI, DAI_ADDRESS } from "../../constants";
-import { useUserProvider, useContractLoader, useGasPrice, useExternalContractLoader, useContractReader } from '../../hooks'
-import { useUserAddress } from "eth-hooks";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { Web3Provider } from "@ethersproject/providers";
 import Web3Modal from "web3modal";
-import { Transactor } from "./../../helpers";
-import { Button, Card, DatePicker, Divider, Input, List, Progress, Slider, Spin, Switch } from "antd";
-import { utils } from 'ethers'
-
-const { parseUnits, formatUnits } = utils
+import { useUserProvider } from "../../hooks";
+import { INFURA_ID, NETWORKS } from "../../constants";
+import { Pool } from "./Pool";
 
 const { ethers } = require("ethers");
 
 const targetNetwork = NETWORKS.localhost;
-const localProviderUrl = targetNetwork.rpcUrl;
-const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
-const localProvider = new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv);
-const blockExplorer = targetNetwork.blockExplorer;
+
+const useMyUserProvider = () => {
+  const [web3Modal, setWeb3Modal] = useState();
+  const [localProvider, setLocalProvider] = useState();
+  const [injectedProvider, setInjectedProvider] = useState();
+
+  useEffect(() => {
+    const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER
+      ? process.env.REACT_APP_PROVIDER
+      : targetNetwork.rpcUrl;
+    setLocalProvider(new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv));
+  }, []);
+
+  useEffect(() => {
+    setWeb3Modal(
+      new Web3Modal({
+        // network: "mainnet", // optional
+        cacheProvider: true, // optional
+        providerOptions: {
+          walletconnect: {
+            package: WalletConnectProvider, // required
+            options: {
+              infuraId: INFURA_ID,
+            },
+          },
+        },
+      }),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (localProvider && web3Modal && web3Modal.cachedProvider) {
+      (async () => {
+        const provider = await web3Modal.connect();
+        setInjectedProvider(new Web3Provider(provider));
+      })();
+    }
+  }, [localProvider, web3Modal]);
+
+  return useUserProvider(injectedProvider, localProvider);
+};
 
 export const LiquidityProvider = () => {
-
-  const [injectedProvider, setInjectedProvider] = useProvider()
-  const userProvider = useUserProvider(injectedProvider, localProvider)
-
-  return <div>
-    <h1>Liquidity Provider</h1>
-    <div>
-      <h2>DAI</h2>
-      <table>
-        <tr>
-          <td><Wallet userProvider={userProvider} /></td>
-          <td><Deposit userProvider={userProvider} /></td>
-        </tr>
-        <tr>
-          <td><Pool userProvider={userProvider} /></td>
-          <td><Button>WITHDRAW</Button></td>
-          <td><Input /></td>
-        </tr>
-      </table>
-    </div>
-  </div>
-
-}
-
-const web3Modal = new Web3Modal({
-  // network: "mainnet", // optional
-  cacheProvider: true, // optional
-  providerOptions: {
-    walletconnect: {
-      package: WalletConnectProvider, // required
-      options: {
-        infuraId: INFURA_ID,
-      },
-    },
-  },
-})
-
-const useProvider = () => {
-
-  const [injectedProvider, setInjectedProvider] = useState()
-
-  useEffect(() => {
-    if (web3Modal.cachedProvider) {
-      (async () => {
-        const provider = await web3Modal.connect()
-        setInjectedProvider(new Web3Provider(provider))
-      })()
-    }
-  }, [])
-
-  return [injectedProvider, setInjectedProvider]
-
-}
-
-const Wallet = ({userProvider}) => {
-  const address = useUserAddress(userProvider)
-  const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
-  const balance = useContractReader({ DAI: DAIContract }, "DAI", "balanceOf", [address])
-  return <div>Wallet {balance ? formatUnits(balance) : 0}</div>
-}
-
-const Deposit = ({userProvider}) => {
-  const [amount, setAmount] = useState() // number
-  const [isEnabled, setEnabled] = useState(false)
-  const address = useUserAddress(userProvider)
-  const contracts = useContractLoader(userProvider)
-  const gasPrice = useGasPrice(targetNetwork, "fast")
-  const DAIContract = useExternalContractLoader(userProvider, DAI_ADDRESS, DAI_ABI)
-  const decimals = useContractReader({ DAI: DAIContract }, "DAI", "decimals")
-
-  useEffect(() => {
-    setEnabled(address && contracts && gasPrice && DAIContract && decimals)
-  }, [address, contracts, gasPrice, DAIContract, decimals])
-
-  const onClick = async () => {
-    // TODO: check allowance first
-    const tx = Transactor(userProvider, gasPrice)
-    await tx(DAIContract.approve(contracts.DAIPool.address, amount), r => {console.log(r)} )
-    await tx(contracts.DAIPool.deposit(amount), r => {console.log(r)} )
-  }
-
+  const userProvider = useMyUserProvider();
   return (
-    <div style={{ display: 'flex', flexDirection: 'row' }} >
-      <Button disabled={!isEnabled} onClick={onClick}>DEPOSIT</Button>
-      <Input disabled={!isEnabled} onChange={({ target: { value }}) => setAmount(parseUnits(value, decimals))} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center" }}>
+      <h1>Pools</h1>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: 20,
+          width: 1000,
+          height: "70vh",
+          border: "1px solid grey",
+        }}
+      >
+        <Pool userProvider={userProvider} />
+      </div>
     </div>
-  )
-
-}
-
-const Pool = ({userProvider}) => {
-
-  const [balance, setBalance] = useState("0")
-  const address = useUserAddress(userProvider)
-  const contracts = useContractLoader(userProvider)
-
-  useEffect(() => {
-    (async () => {
-      if(contracts) {
-        setBalance(await contracts.DAIPool.balanceOf(address))
-      }
-    })()
-  })
-
-  return <div>Pool {formatUnits(balance)}</div>
-}
+  );
+};

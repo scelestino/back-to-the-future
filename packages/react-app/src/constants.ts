@@ -11,7 +11,11 @@ export const BLOCKNATIVE_DAPPID = "0b58206a-f3c0-4701-a62f-73c7243e8c77";
 
 export const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 
-export const DAI_ABI = [
+export interface ABI extends ReadonlyArray<any> {
+  readonly [key: string]: any;
+}
+
+export const DAI_ABI: ABI = [
   {
     inputs: [{ internalType: "uint256", name: "chainId_", type: "uint256" }],
     payable: false,
@@ -444,7 +448,20 @@ export const WETH_ABI = [
   },
 ];
 
-export const NETWORKS = {
+type TNetworks = {
+  [key: string]: {
+    name: string;
+    color: string;
+    chainId: number;
+    blockExplorer: string;
+    rpcUrl: string;
+    faucet?: string;
+    gasPrice?: number;
+    price?: number;
+  };
+};
+
+export const NETWORKS: TNetworks = {
   localhost: {
     name: "localhost",
     color: "#666666",
@@ -523,7 +540,7 @@ export const NETWORKS = {
   },
 };
 
-export const NETWORK = chainId => {
+export const NETWORK = (chainId: number) => {
   for (const n in NETWORKS) {
     if (NETWORKS[n].chainId === chainId) {
       return NETWORKS[n];

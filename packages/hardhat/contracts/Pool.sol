@@ -137,7 +137,11 @@ contract Pool is IPool, Validated {
     }
 
     function _utilisationRateAfterLoan(uint amount) internal view returns (uint rate) {
-        uint balanceAfterLoan = amount + borrowed;
-        rate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
+        if (balance != 0) {
+            uint balanceAfterLoan = amount + borrowed;
+            rate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
+        } else {
+            rate = 0;
+        }
     }
 }

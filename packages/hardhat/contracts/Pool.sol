@@ -128,4 +128,8 @@ contract Pool is IPool, Validated {
             }
         }
     }
+
+    function utilizationRate() external view override returns (uint rate) {
+      rate = 0;
+    }
 }

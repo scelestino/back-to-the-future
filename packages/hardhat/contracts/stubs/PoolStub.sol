@@ -33,4 +33,8 @@ contract PoolStub is IPool {
     function borrowingRateAfterLoan(uint) pure public override returns (uint rate) {
         rate = 0;
     }
+
+    function utilizationRate() pure external override returns (uint rate) {
+      rate = 0;
+    }
 }

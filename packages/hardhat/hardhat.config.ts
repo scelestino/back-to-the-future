@@ -206,6 +206,14 @@ task('fund', 'Add WETH and DAI to Test Accounts')
 
   })
 
+task('time', 'Increment time')
+  .addParam("seconds", "How many seconds")
+  .setAction(async (taskArgs, { network, ethers }) => {
+    let provider = ethers.provider
+    await provider.send('evm_increaseTime', [ parseInt(taskArgs.seconds) ])
+    await provider.send('evm_mine', [])
+  })
+
 // const DEBUG = false;
 //
 // function debug(text) {

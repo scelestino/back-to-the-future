@@ -72,7 +72,7 @@ export const Pool = ({ userProvider, tokenName, poolName }) => {
   const contracts = useMyContractReader(userProvider);
   const gasPrice = useGasPrice(targetNetwork, "fast");
 
-  const utilizationRate = useContractReader(contracts, poolName, "utilizationRate", [], formatUnits);
+  const utilisationRate = useContractReader(contracts, poolName, "utilisationRate", [], formatUnits);
   const balance = useContractReader(contracts, poolName, "balance", [], formatUnits);
   const borrowed = useContractReader(contracts, poolName, "borrowed", [], formatUnits);
   const borrowingRate = useContractReader(contracts, poolName, "borrowingRate", [], formatUnits);
@@ -84,7 +84,7 @@ export const Pool = ({ userProvider, tokenName, poolName }) => {
       <InnerWrapper>
         <Typography style={{ fontSize: 20 }}>{tokenName}</Typography>
         <div style={{ display: "flex", flexDirection: "row" }}>
-          {ratioItem("Utilization Rate", utilizationRate)}
+          {ratioItem("Utilisation Rate", utilisationRate)}
           {divider}
           {balanceItem(tokenName, "Pool Size", balance)}
           {divider}

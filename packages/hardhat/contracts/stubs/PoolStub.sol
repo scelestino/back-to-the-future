@@ -34,7 +34,7 @@ contract PoolStub is IPool {
         rate = 0;
     }
 
-    function utilizationRate() pure external override returns (uint rate) {
-      rate = 0;
+    function utilisationRate() pure external override returns (uint rate) {
+        rate = 0;
     }
 }

@@ -18,5 +18,5 @@ interface IPool {
 
     function borrowingRateAfterLoan(uint amount) view external returns (uint rate);
 
-    function utilizationRate() view external returns (uint rate);
+    function utilisationRate() view external returns (uint rate);
 }

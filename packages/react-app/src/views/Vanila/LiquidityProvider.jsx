@@ -5,7 +5,7 @@ import { Web3Provider } from "@ethersproject/providers";
 import Web3Modal from "web3modal";
 import { useUserProvider } from "../../hooks";
 import { INFURA_ID, NETWORKS } from "../../constants";
-import { Pool } from "./Pool";
+import { LiquidityProviderPool } from "./LiquidityProviderPool";
 
 const { ethers } = require("ethers");
 
@@ -68,8 +68,8 @@ export const LiquidityProvider = () => {
           border: "1px solid grey",
         }}
       >
-        <Pool userProvider={userProvider} tokenName="WETH" poolName="WETHPool" />
-        <Pool userProvider={userProvider} tokenName="DAI" poolName="DAIPool" />
+        <LiquidityProviderPool userProvider={userProvider} tokenName="WETH" poolName="WETHPool" />
+        <LiquidityProviderPool userProvider={userProvider} tokenName="DAI" poolName="DAIPool" />
       </div>
     </div>
   );

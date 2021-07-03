@@ -40,17 +40,14 @@ const InnerWrapper = styled.div`
   }
 `;
 
+const NONE = 0;
+const DEPOSIT = "Deposit";
+const WITHDRAW = "Withdraw";
+
 export const balanceItem = (tokenName, text, number, alignStart) => (
   <div style={{ display: "flex", flexDirection: "column" }}>
     <Typography style={{ alignSelf: alignStart ? "flex-start" : "inherit" }}>{text}</Typography>
     <Typography>{`${number} ${tokenName}`}</Typography>
-  </div>
-);
-
-export const ratioItem = (text, number, alignStart) => (
-  <div style={{ display: "flex", flexDirection: "column" }}>
-    <Typography style={{ alignSelf: alignStart ? "flex-start" : "inherit" }}>{text}</Typography>
-    <Typography>{`${number}%`}</Typography>
   </div>
 );
 
@@ -67,15 +64,47 @@ const useMyContractReader = userProvider => {
   return contracts;
 };
 
-export const Pool = ({ userProvider, tokenName, poolName }) => {
+export const LiquidityProviderPool = ({ userProvider, tokenName, poolName }) => {
   const address = useUserAddress(userProvider);
   const contracts = useMyContractReader(userProvider);
   const gasPrice = useGasPrice(targetNetwork, "fast");
 
-  const utilisationRate = useContractReader(contracts, poolName, "utilisationRate", [], formatUnits);
-  const balance = useContractReader(contracts, poolName, "balance", [], formatUnits);
-  const borrowed = useContractReader(contracts, poolName, "borrowed", [], formatUnits);
-  const borrowingRate = useContractReader(contracts, poolName, "borrowingRate", [], formatUnits);
+  const walletBalance = useContractReader(contracts, tokenName, "balanceOf", [address], formatUnits);
+  const poolBalance = useContractReader(contracts, poolName, "balanceOf", [address], formatUnits);
+
+  const [modalSelected, setModalSelected] = useState(NONE);
+  const [amount, setAmount] = useState();
+
+  const handleSubmit = async isDeposit => {
+    const tx = Transactor(userProvider, gasPrice);
+    if (isDeposit) {
+      await tx(contracts[tokenName].approve(contracts[poolName].address, amount), r => {
+        console.log(r);
+      });
+      await tx(contracts[poolName].deposit(amount), async result => {
+        setModalSelected(NONE);
+        setAmount("0");
+        console.log("deposit result", await result);
+      });
+    } else {
+      await tx(contracts[poolName].withdraw(amount), async result => {
+        setModalSelected(NONE);
+        setAmount("0");
+        console.log("withdraw result", await result);
+      });
+    }
+  };
+
+  const form = (
+    <InnerWrapper>
+      <Typography>Amount</Typography>
+      <Input
+        onChange={({ target: { value } }) => setAmount(parseUnits(value || "0"))}
+        placeholder={`${tokenName} to ${modalSelected}`}
+        style={{ width: 150 }}
+      />
+    </InnerWrapper>
+  );
 
   const divider = <div style={{ margin: "0 10px", height: 45, width: "1px", backgroundColor: "white" }} />;
 
@@ -84,15 +113,23 @@ export const Pool = ({ userProvider, tokenName, poolName }) => {
       <InnerWrapper>
         <Typography style={{ fontSize: 20 }}>{tokenName}</Typography>
         <div style={{ display: "flex", flexDirection: "row" }}>
-          {ratioItem("Utilisation Rate", utilisationRate)}
+          {balanceItem(tokenName, "Wallet Balance", walletBalance)}
           {divider}
-          {balanceItem(tokenName, "Pool Size", balance)}
-          {divider}
-          {balanceItem(tokenName, "Borrowed", borrowed)}
-          {divider}
-          {ratioItem("Borrowing Rate", borrowingRate)}
-          {divider}
+          {balanceItem(tokenName, "Pool Balance", poolBalance)}
         </div>
+        <div>
+          <Button onClick={() => setModalSelected(DEPOSIT)}>Deposit</Button>
+          <Button onClick={() => setModalSelected(WITHDRAW)}>Withdraw</Button>
+        </div>
+        <Modal
+          okText={modalSelected}
+          title={modalSelected}
+          visible={modalSelected !== NONE}
+          onOk={() => handleSubmit(modalSelected === DEPOSIT)}
+          onCancel={() => setModalSelected(NONE)}
+        >
+          {form}
+        </Modal>
       </InnerWrapper>
     </Wrapper>
   );

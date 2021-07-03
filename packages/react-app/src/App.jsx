@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Switch } from "react-router-dom";
 import "./App.css";
 import { ThemeSwitch } from "./components";
-import { LiquidityProvider, Trader } from "./views";
+import { LiquidityProvider, Trader, Pools } from "./views";
 
 function App() {
   const [route, setRoute] = useState();
@@ -37,6 +37,16 @@ function App() {
               Liquidity Provider
             </Link>
           </Menu.Item>
+          <Menu.Item key="/pools">
+            <Link
+              onClick={() => {
+                setRoute("/pools");
+              }}
+              to="/pools"
+            >
+              Pools
+            </Link>
+          </Menu.Item>
         </Menu>
 
         <Switch>
@@ -47,6 +57,9 @@ function App() {
           </Route>
           <Route path="/liquidity-provider">
             <LiquidityProvider />
+          </Route>
+          <Route path="/pools">
+            <Pools />
           </Route>
         </Switch>
       </BrowserRouter>

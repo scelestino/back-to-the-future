@@ -15,15 +15,15 @@ contract Pool is IPool, Validated {
     using PRBMathUD60x18 for uint256;
 
     // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
-    uint256 public immutable optimalUtilizationRate;
+    uint256 public immutable optimalUtilisationRate;
     // This constant represents the excess utilization rate above the optimal.
     // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
-    uint256 public immutable excessUtilizationRate;
+    uint256 public immutable excessUtilisationRate;
     // Base variable borrow rate when Utilization rate = 0.
     uint256 internal immutable baseBorrowRate;
-    // Slope of the variable interest curve when utilization rate > 0 and <= optimalUtilizationRate.
+    // Slope of the variable interest curve when utilization rate > 0 and <= optimalUtilisationRate.
     uint256 internal immutable slope1;
-    // Slope of the variable interest curve when utilization rate > optimalUtilizationRate.
+    // Slope of the variable interest curve when utilization rate > optimalUtilisationRate.
     uint256 internal immutable slope2;
 
 
@@ -37,15 +37,15 @@ contract Pool is IPool, Validated {
 
     constructor (
         ERC20 _token,
-        uint256 _optimalUtilizationRate,
+        uint256 _optimalUtilisationRate,
         uint256 _baseBorrowRate,
         uint256 _slope1,
         uint256 _slope2
     ) {
         token = _token;
         tokenScale = 10 ** _token.decimals();
-        optimalUtilizationRate = _optimalUtilizationRate;
-        excessUtilizationRate = PRBMathUD60x18.SCALE - _optimalUtilizationRate;
+        optimalUtilisationRate = _optimalUtilisationRate;
+        excessUtilisationRate = PRBMathUD60x18.SCALE - _optimalUtilisationRate;
         baseBorrowRate = _baseBorrowRate;
         slope1 = _slope1;
         slope2 = _slope2;
@@ -110,22 +110,34 @@ contract Pool is IPool, Validated {
     }
 
     function borrowingRate() external view override returns (uint rate) {
-        rate = borrowingRateAfterLoan(0);
+        rate = _borrowingRateAfterLoan(0);
     }
 
-    function borrowingRateAfterLoan(uint amount) public view override returns (uint rate) {
+    function borrowingRateAfterLoan(uint amount) external view override returns (uint rate) {
+        rate = _borrowingRateAfterLoan(amount);
+    }
+
+    function utilisationRate() external view override returns (uint rate) {
+        rate = _utilisationRateAfterLoan(0);
+    }
+
+    function _borrowingRateAfterLoan(uint amount) internal view returns (uint rate) {
         if (balance == 0) {
             rate = baseBorrowRate;
         } else {
-            uint balanceAfterLoan = amount + borrowed;
-            uint utilizationRate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
+            uint _utilisationRate = _utilisationRateAfterLoan(amount);
 
-            if (utilizationRate > optimalUtilizationRate) {
-                uint256 excessUtilizationRateRatio = (utilizationRate - optimalUtilizationRate).div(excessUtilizationRate);
-                rate = baseBorrowRate + slope1 + slope2.mul(excessUtilizationRateRatio);
+            if (_utilisationRate > optimalUtilisationRate) {
+                uint256 excessUtilisationRateRatio = (_utilisationRate - optimalUtilisationRate).div(excessUtilisationRate);
+                rate = baseBorrowRate + slope1 + slope2.mul(excessUtilisationRateRatio);
             } else {
-                rate = baseBorrowRate + utilizationRate.mul(slope1).div(optimalUtilizationRate);
+                rate = baseBorrowRate + _utilisationRate.mul(slope1).div(optimalUtilisationRate);
             }
         }
+    }
+
+    function _utilisationRateAfterLoan(uint amount) internal view returns (uint rate) {
+        uint balanceAfterLoan = amount + borrowed;
+        rate = balanceAfterLoan == 0 ? 0 : balanceAfterLoan.div(balance);
     }
 }

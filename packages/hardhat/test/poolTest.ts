@@ -279,26 +279,28 @@ describe("Pool", async () => {
     describe("Borrowing rate", async () => {
 
         [
-            [parseUnits("100"), parseUnits("10"), parseUnits("0.012307692307692307"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
-            [parseUnits("100"), parseUnits("10"), parseUnits("0.112307692307692307"), parseUnits("0.65"), parseUnits("0.1"), parseUnits("0.08"), parseUnits("1")],
-            [parseUnits("100"), parseUnits("65"), parseUnits("0.08"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
-            [parseUnits("100"), parseUnits("80"), parseUnits("0.508571428571428571"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
-            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0125"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],
-            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.0625"), parseUnits("0.8"), parseUnits("0.05"), parseUnits("0.04"), parseUnits("0.75")],
-            [parseUnits("100000"), parseUnits("80000"), parseUnits("0.04"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],
-            [parseUnits("100000"), parseUnits("90000"), parseUnits("0.415"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")]
-        ].forEach(([poolSize, borrowedAmount, borrowingRate, optimalUtilizationRate, baseBorrowRate, slope1, slope2]) => [
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.1"), parseUnits("0.012307692307692307"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("10"), parseUnits("0.1"), parseUnits("0.112307692307692307"), parseUnits("0.65"), parseUnits("0.1"), parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("65"), parseUnits("0.65"), parseUnits("0.08"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100"), parseUnits("80"), parseUnits("0.80"), parseUnits("0.508571428571428571"), parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1")],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.25"), parseUnits("0.0125"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],
+            [parseUnits("100000"), parseUnits("25000"), parseUnits("0.25"), parseUnits("0.0625"), parseUnits("0.8"), parseUnits("0.05"), parseUnits("0.04"), parseUnits("0.75")],
+            [parseUnits("100000"), parseUnits("80000"), parseUnits("0.8"), parseUnits("0.04"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")],
+            [parseUnits("100000"), parseUnits("90000"), parseUnits("0.9"), parseUnits("0.415"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")]
+        ].forEach(([poolSize, borrowedAmount, utilisationRate, borrowingRate, optimalutilisationRate, baseBorrowRate, slope1, slope2]) => [
             it(`should return the borrowing rate for poolSize = ${formatUnits(poolSize.toString())}, borrowed amount = ${formatUnits(borrowedAmount.toString())}`, async () => {
-                sut = await poolFactory.deploy(erc20.address, optimalUtilizationRate, baseBorrowRate, slope1, slope2)
+                sut = await poolFactory.deploy(erc20.address, optimalutilisationRate, baseBorrowRate, slope1, slope2)
                 await sut.deployed()
                 expect(sut.address).to.properAddress
                 await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
 
                 expect(await sut.borrowingRate()).to.be.eq(baseBorrowRate)
+                expect(await sut.utilisationRate()).to.be.eq(0)
 
                 await sut.connect(owner).deposit(poolSize)
                 await sut.borrow(borrowedAmount, uniswap)
 
+                expect(await sut.utilisationRate()).to.be.eq(utilisationRate)
                 expect(await sut.borrowingRate()).to.be.eq(borrowingRate)
             })
         ]);

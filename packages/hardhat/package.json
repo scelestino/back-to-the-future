@@ -57,6 +57,9 @@
     "send": "hardhat send",
     "generate": "hardhat generate",
     "account": "hardhat account",
-    "fund": "hardhat fund"
+    "fund": "hardhat fund",
+    "time:day": "hardhat time --seconds 86400",
+    "time:week": "hardhat time --seconds 604800",
+    "time:month": "hardhat time --seconds 2592000"
   }
 }

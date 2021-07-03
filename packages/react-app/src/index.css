@@ -2,7 +2,11 @@ body {
   margin: 0;
 }
 
+#root {
+  height: 100vh;
+  background-color: black;
+}
+
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }

@@ -2,46 +2,53 @@ import React from 'react'
 import _Table from '@material-ui/core/Table';
 import _TableContainer from '@material-ui/core/TableContainer';
 import styled from 'styled-components';
-import { TableHead, TableRow, TableCell, Paper, TableBody } from '@material-ui/core'
+import { TableHead, TableRow as _TableRow, TableCell, Paper, TableBody } from '@material-ui/core'
+import { Typography } from 'antd';
+import { colors } from './Ticket';
 
 const TableContainer = styled(_TableContainer)`
-  max-width: 1000px;
-  margin: 20px 0 0 20px;
   background: transparent;
 `
 
 const Table = styled(_Table)`
-  min-width: 650px;
+  .MuiPaper-rounded {
+    border-radius: 16px;
+  }
   .MuiTableCell-root {
     padding: 0;
   }
 `
 
-export const Positions = ({ contract, side, size, entryPrice, margin }) => {
+const TableRow = styled(_TableRow)`
+  height: 40px;
+`
+
+const HRow = styled(Typography)`
+  font-size: 14px;
+  align-self: center;
+  width: 220px;
+`
+
+export const Positions = ({ contract, side, size, entryPrice }) => {
   return (
-    <TableContainer component={Paper}>
-      <Table aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Contract</TableCell>
-            <TableCell align="center">Side</TableCell>
-            <TableCell align="center">Size</TableCell>
-            <TableCell align="center">Entry Price</TableCell>
-            <TableCell align="center">Margin</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-        <TableRow key={contract}>
-              <TableCell component="th" scope="row">
-                {contract}
-              </TableCell>
-              <TableCell align="center">{side}</TableCell>
-              <TableCell align="center">{size}</TableCell>
-              <TableCell align="center">{entryPrice}</TableCell>
-              <TableCell align="center">{margin}</TableCell>
-            </TableRow>
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <div style={{ display: 'flex', flexDirection: 'column', width: 1105, marginTop: 50 }}>
+      <Typography style={{ paddingBottom: 18, fontWeight: 'bold', fontSize: 16, alignSelf: 'flex-start' }}>Position</Typography>
+      <div style={{ height: 84 }}>
+        <div style={{ borderRadius: '16px 16px 0px 0px', backgroundColor: colors.lighterGrey, display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', height: 42 }}>
+          <HRow style={{ color: colors.menu.notSelected }}>Contract</HRow>
+          <HRow style={{ color: colors.menu.notSelected }}>Side</HRow>
+          <HRow style={{ color: colors.menu.notSelected }}>Entry Price</HRow>
+          <HRow style={{ color: colors.menu.notSelected }}>Size</HRow>
+          <HRow style={{ color: colors.menu.notSelected }}>PnL</HRow>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', height: 42 }}>
+          <HRow>{contract}</HRow>
+          <HRow>{side}</HRow>
+          <HRow>{entryPrice}</HRow>
+          <HRow>{size}</HRow>
+          <HRow>1000.00000 DAI</HRow>
+        </div>
+      </div>
+    </div>
   );
 }

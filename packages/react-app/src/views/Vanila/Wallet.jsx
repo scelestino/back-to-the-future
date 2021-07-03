@@ -1,17 +1,18 @@
-import { Button, Input, Modal, Typography } from "antd";
+import { Button, Input, Modal as _Modal, Typography } from "antd";
 import { utils } from 'ethers';
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { YellowButton } from "../../App";
 import { DAI_ADDRESS } from '../../constants';
 import { useAddress, useBalance, useContracts, useDaiContract, useGasPrice, useProvider, usePurchasingPower } from '../../services';
 import { Transactor } from "./../../helpers";
+import { colors, ModalContent, StyledInputWrapper, SInput } from "./Ticket";
 const { parseUnits, formatUnits } = utils
 
 const Wrapper = styled.div`
-  height: 80px;
+  height: 110px;
   width: 100%;
   display: flex;
-  background-color: rgb(48, 48, 48);
   flex-direction: row;
   justify-content: center;
   align-items: center;
@@ -37,14 +38,20 @@ const InnerWrapper = styled.div`
   }
 `
 
+const Modal = styled(_Modal)`
+  .ant-modal-title {
+    font-size: 22px;
+  }
+`
+
 const NONE = 0
 const DEPOSIT = 'Deposit'
 const WITHDRAW = 'Withdraw'
 
 export const balanceItem = (text, number, alignStart) => (
   <div style={{ display: 'flex', flexDirection: 'column' }}>
-    <Typography style={{  alignSelf: alignStart ? 'flex-start' : 'inherit' }}>{text}</Typography>
-    <Typography>{`${number} DAI`}</Typography>
+    <Typography style={{ color: colors.menu.notSelected,  alignSelf: alignStart ? 'flex-start' : 'inherit' }}>{text}</Typography>
+    <Typography style={{ fontSize: 22, color: '#ffffff' }}>{`${Number(number).toFixed(4)} DAI`}</Typography>
   </div>
 )
 
@@ -81,14 +88,14 @@ export const Wallet = () => {
   }
 
   const form = (
-    <InnerWrapper>
-      <Typography>Amount</Typography>
-      <Input
+    <StyledInputWrapper style={{ backgroundColor: colors.lighterGrey }}>
+      <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`Amount to ${String(modalSelected).toLowerCase()}`}</Typography>
+      <SInput
         onChange={({ target: { value }}) => setAmount(parseUnits(value || '0'))}
-        placeholder={`DAI to ${modalSelected}`}
-        style={{ width: 150 }}
+        placeholder={`0.00`}
+        style={{ marginLeft: 3, border: 'none', height: 10, fontSize: 22, height: '40px' }}
       />
-    </InnerWrapper>
+    </StyledInputWrapper>
   )
 
   const divider = (
@@ -96,7 +103,7 @@ export const Wallet = () => {
   )
 
   return (
-    <Wrapper>
+    <Wrapper style={{ backgroundColor: colors.backgroundSecondary }}>
       <InnerWrapper>
         <Typography style={{ fontSize: 20 }}>Trader</Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -107,8 +114,8 @@ export const Wallet = () => {
           {balanceItem('Balance', formattedBalance)}
         </div>
         <div>
-          <Button onClick={() => setModalSelected(DEPOSIT)}>Deposit</Button>
-          <Button onClick={() => setModalSelected(WITHDRAW)}>Withdraw</Button>
+          <YellowButton onClick={() => setModalSelected(DEPOSIT)}>Deposit</YellowButton>
+          <YellowButton onClick={() => setModalSelected(WITHDRAW)}>Withdraw</YellowButton>
         </div>
         <Modal
           okText={modalSelected}
@@ -116,8 +123,11 @@ export const Wallet = () => {
           visible={modalSelected !== NONE}
           onOk={() => handleSubmit(modalSelected === DEPOSIT)}
           onCancel={() => setModalSelected(NONE)}
+          okButtonProps={{ style: { color: colors.yellow, backgroundColor: 'unset', border: `1px solid ${colors.yellow}` }}}
         >
-          {form}
+          <ModalContent>
+            {form}
+          </ModalContent>
         </Modal>
       </InnerWrapper>
     </Wrapper>

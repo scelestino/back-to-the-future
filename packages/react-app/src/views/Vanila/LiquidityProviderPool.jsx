@@ -6,6 +6,9 @@ import { useUserAddress } from "eth-hooks";
 import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from "../../hooks";
 import { NETWORKS, DAI_ABI, DAI_ADDRESS, WETH_ADDRESS, WETH_ABI} from "../../constants";
 import { Transactor } from "../../helpers";
+import { Row, Cell } from './LiquidityProvider'
+import { YellowButton } from '../../App'
+import { ModalContent, StyledInputWrapper, colors, SInput } from './Ticket'
 
 const targetNetwork = NETWORKS.localhost;
 const { parseUnits, formatUnits } = utils;
@@ -106,31 +109,43 @@ export const LiquidityProviderPool = ({ userProvider, tokenName, poolName }) => 
     </InnerWrapper>
   );
 
+  const formm = (
+    <StyledInputWrapper style={{ backgroundColor: colors.lighterGrey }}>
+      <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`Amount to ${String(modalSelected).toLowerCase()}`}</Typography>
+      <SInput
+        onChange={({ target: { value }}) => setAmount(parseUnits(value || '0'))}
+        placeholder={`0.00`}
+        style={{ marginLeft: 3, border: 'none', height: 10, fontSize: 22, height: '40px' }}
+      />
+    </StyledInputWrapper>
+  )
+
   const divider = <div style={{ margin: "0 10px", height: 45, width: "1px", backgroundColor: "white" }} />;
 
   return (
-    <Wrapper>
-      <InnerWrapper>
-        <Typography style={{ fontSize: 20 }}>{tokenName}</Typography>
-        <div style={{ display: "flex", flexDirection: "row" }}>
-          {balanceItem(tokenName, "Wallet Balance", walletBalance)}
-          {divider}
-          {balanceItem(tokenName, "Pool Balance", poolBalance)}
-        </div>
-        <div>
-          <Button onClick={() => setModalSelected(DEPOSIT)}>Deposit</Button>
-          <Button onClick={() => setModalSelected(WITHDRAW)}>Withdraw</Button>
-        </div>
-        <Modal
-          okText={modalSelected}
-          title={modalSelected}
-          visible={modalSelected !== NONE}
-          onOk={() => handleSubmit(modalSelected === DEPOSIT)}
-          onCancel={() => setModalSelected(NONE)}
-        >
-          {form}
-        </Modal>
-      </InnerWrapper>
-    </Wrapper>
+    <Row>
+      <Cell>{tokenName}</Cell>
+      <Cell>TBD</Cell>
+      <Cell>{Number(walletBalance).toFixed(4)}</Cell>
+      <Cell>{Number(poolBalance).toFixed(4)}</Cell>
+      <Cell>
+        <YellowButton onClick={() => setModalSelected(DEPOSIT)}>Deposit</YellowButton>
+      </Cell>
+      <Cell>
+        <YellowButton onClick={() => setModalSelected(WITHDRAW)}>Withdraw</YellowButton>
+      </Cell>
+      <Modal
+        okText={modalSelected}
+        title={modalSelected}
+        visible={modalSelected !== NONE}
+        onOk={() => handleSubmit(modalSelected === DEPOSIT)}
+        onCancel={() => setModalSelected(NONE)}
+        okButtonProps={{ style: { color: colors.yellow, backgroundColor: 'unset', border: `1px solid ${colors.yellow}` }}}
+      >
+        <ModalContent>
+          {formm}
+        </ModalContent>
+      </Modal>
+    </Row>
   );
 };

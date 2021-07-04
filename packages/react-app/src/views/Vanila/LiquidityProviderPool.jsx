@@ -113,6 +113,7 @@ export const LiquidityProviderPool = ({ userProvider, tokenName, poolName }) => 
     <StyledInputWrapper style={{ backgroundColor: colors.lighterGrey }}>
       <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`Amount to ${String(modalSelected).toLowerCase()}`}</Typography>
       <SInput
+        bordered={false}
         onChange={({ target: { value }}) => setAmount(parseUnits(value || '0'))}
         placeholder={`0.00`}
         style={{ marginLeft: 3, border: 'none', height: 10, fontSize: 22, height: '40px' }}

@@ -48,10 +48,10 @@ const NONE = 0
 const DEPOSIT = 'Deposit'
 const WITHDRAW = 'Withdraw'
 
-export const balanceItem = (text, number, alignStart) => (
+export const balanceItem = (text, number, alignStart, ccy) => (
   <div style={{ display: 'flex', flexDirection: 'column' }}>
     <Typography style={{ color: colors.menu.notSelected,  alignSelf: alignStart ? 'flex-start' : 'inherit' }}>{text}</Typography>
-    <Typography style={{ fontSize: 22, color: '#ffffff' }}>{`${Number(number).toFixed(4)} DAI`}</Typography>
+    <Typography style={{ fontSize: 22, color: '#ffffff' }}>{`${Number(number).toFixed(4)} ${ccy ? ccy : ''}`}</Typography>
   </div>
 )
 
@@ -91,6 +91,7 @@ export const Wallet = () => {
     <StyledInputWrapper style={{ backgroundColor: colors.lighterGrey }}>
       <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`Amount to ${String(modalSelected).toLowerCase()}`}</Typography>
       <SInput
+        bordered={false}
         onChange={({ target: { value }}) => setAmount(parseUnits(value || '0'))}
         placeholder={`0.00`}
         style={{ marginLeft: 3, border: 'none', height: 10, fontSize: 22, height: '40px' }}
@@ -106,12 +107,12 @@ export const Wallet = () => {
     <Wrapper style={{ backgroundColor: colors.backgroundSecondary }}>
       <InnerWrapper>
         <Typography style={{ fontSize: 20 }}>Trader</Typography>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          {balanceItem('Purchasing Power', purchasingPower)}
+        <div style={{ justifyContent: 'center', width: 585, display: 'flex', flexDirection: 'row' }}>
+          {balanceItem('Purchasing Power', purchasingPower, false, 'DAI')}
           {divider}
-          {balanceItem('Margin', margin)}
+          {balanceItem('Margin', margin, false, 'DAI')}
           {divider}
-          {balanceItem('Balance', formattedBalance)}
+          {balanceItem('Balance', formattedBalance, false, 'DAI')}
         </div>
         <div>
           <YellowButton onClick={() => setModalSelected(DEPOSIT)}>Deposit</YellowButton>

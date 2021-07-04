@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { TableHead, TableRow as _TableRow, TableCell, Paper, TableBody } from '@material-ui/core'
 import { Typography } from 'antd';
 import { colors } from './Ticket';
+import { useAddress, usePositions } from '../../services';
 
 const TableContainer = styled(_TableContainer)`
   background: transparent;
@@ -19,10 +20,6 @@ const Table = styled(_Table)`
   }
 `
 
-const TableRow = styled(_TableRow)`
-  height: 40px;
-`
-
 const HRow = styled(Typography)`
   font-size: 14px;
   align-self: center;
@@ -30,6 +27,8 @@ const HRow = styled(Typography)`
 `
 
 export const Positions = ({ contract, side, size, entryPrice }) => {
+  const address = useAddress()
+  const position = usePositions(address)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: 1105, marginTop: 50 }}>
       <Typography style={{ paddingBottom: 18, fontWeight: 'bold', fontSize: 16, alignSelf: 'flex-start' }}>Position</Typography>
@@ -41,13 +40,15 @@ export const Positions = ({ contract, side, size, entryPrice }) => {
           <HRow style={{ color: colors.menu.notSelected }}>Size</HRow>
           <HRow style={{ color: colors.menu.notSelected }}>PnL</HRow>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', height: 42 }}>
-          <HRow>{contract}</HRow>
-          <HRow>{side}</HRow>
-          <HRow>{entryPrice}</HRow>
-          <HRow>{size}</HRow>
-          <HRow>1000.00000 DAI</HRow>
-        </div>
+        {position && (
+          <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', height: 42 }}>
+            <HRow>{contract}</HRow>
+            <HRow>{side}</HRow>
+            <HRow>{entryPrice}</HRow>
+            <HRow>{size}</HRow>
+            <HRow>1000.00000 DAI</HRow>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -23,13 +23,33 @@ export const colors = {
   lighterGrey: 'rgba(255, 255, 255, 0.05)'
 }
 
-const useFuture = (baseCurr, quoteCurr) => {
-  return {
-    baseCurr,
-    quoteCurr,
-    expiry: '16/08/21' // format(hardcodedExpiryTime, 'yy/LL/dd')
+export const SInput = styled(Input)`
+  .ant-input:focus {
+    border-color: #57a8e9;
+    outline: 0;
+    -webkit-box-shadow: 0 0 0 0 rgba(87,168,233, .2);
+    box-shadow: 0 0 0 0 rgba(87,168,233, .2);
   }
-}
+`
+
+export const StyledInputWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 76px;
+  width: 475px;
+  border-radius: 16px;
+  .ant-input:focus .ant-input-focused {
+    border: none;
+    border-bottom: 1px solid white !important;
+    box-shadow: none;
+  }
+
+  .ant-input-focused .ant-input:focus {
+    border: none;
+    border-bottom: 1px solid white !important;
+    box-shadow: none;
+  }
+`
 
 const BuySellWrapper = styled.div`
   display: flex;
@@ -69,19 +89,20 @@ const calculateSellPriceWithSlippage = (price, slippageTolerance) => {
 const BuySell = ({ userProvider, slippageTolerance, leverage }) => {
   const [buyQty, setBuyQty] = useState(1)
   const [sellQty, setSellQty] = useState(1)
+  const [buyRateQty, setBuyRateQty] = useState('1')
+  const [sellRateQty, setSellRateQty] = useState('1')
   const contracts = useContracts()
   const gasPrice = useGasPrice('localhost')
   const FutureContract = contracts.Future
-  const [rawQuoteBidRate, formattedQuoteBidRate] = useBidRate('1', formatUnits)
-  const [rawQuoteAskRate, formattedQuoteAskRate] = useAskRate('1', formatUnits)
+  const [rawQuoteBidRate, formattedQuoteBidRate] = useBidRate(buyRateQty, formatUnits)
+  const [rawQuoteAskRate, formattedQuoteAskRate] = useAskRate(sellRateQty, formatUnits)
 
   const handleSubmitTrade = async (qty) => {
     const tx = Transactor(userProvider, gasPrice)
     if (qty > 0) {
       const price = calculateBuyPriceWithSlippage(rawQuoteAskRate, slippageTolerance)
       const quantity = parseUnits(String(qty))
-      debugger
-      // await tx(contracts.UserAccount.placeOrder(FutureContract.address, quantity, price, leverage));
+      await tx(contracts.UserAccount.placeOrder(FutureContract.address, quantity, price, leverage));
     } else if (qty < 0) {
       const price = calculateSellPriceWithSlippage(rawQuoteBidRate, slippageTolerance)
       const quantity = parseUnits(String(qty))
@@ -92,14 +113,40 @@ const BuySell = ({ userProvider, slippageTolerance, leverage }) => {
   return (
     <BuySellWrapper>
       <Cell>
-        <Input style={{ width: 100 }} onChange={({ target: { value }}) => setBuyQty(Number(value))} />
+        <StyledInputWrapper style={{ width: 84 }} >
+          <Typography style={{ marginLeft: 15, alignItems: 'flex-start', marginTop: -5, marginBottom: -5, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`Size`}</Typography>
+          <SInput
+            onBlur={() => {
+              if (buyQty && Number(buyQty) > 0) {
+                setBuyRateQty(String(buyQty))
+              }
+            }}
+            bordered={false}
+            value={buyQty}
+            onChange={({ target: { value }}) => setBuyQty(value)}
+            style={{ marginLeft: 3, border: 'none', height: 10, fontSize: 22, height: '40px' }}
+          />
+        </StyledInputWrapper>
         {balanceItem('Price', formattedQuoteAskRate, true)}
-        <Button style={{ fontSize: 18, width: 112, height: 50, border: 'none', color: 'black', background: 'linear-gradient(270deg, #4EF8C0 22.28%, #FAEB61 163.35%)' }} onClick={() => handleSubmitTrade(buyQty)}>Buy</Button>
+        <Button style={{ fontSize: 18, width: 112, height: 50, border: 'none', color: 'black', background: 'linear-gradient(270deg, #4EF8C0 22.28%, #FAEB61 163.35%)' }} onClick={() => handleSubmitTrade(Number(buyQty))}>Buy</Button>
       </Cell>
       <Cell>
-        <Input style={{ width: 100 }} onChange={({ target: { value }}) => setSellQty(Number(value) * - 1)} />
+        <StyledInputWrapper style={{ width: 84 }} >
+            <Typography style={{ marginLeft: 15, alignItems: 'flex-start', marginTop: -5, marginBottom: -5, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`Size`}</Typography>
+            <SInput
+              onBlur={() => {
+                if (sellQty && Number(sellQty) > 0) {
+                  setBuyRateQty(String(sellQty))
+                }
+              }}
+              bordered={false}
+              value={sellQty}
+              onChange={({ target: { value }}) => setSellQty(value)}
+              style={{ marginLeft: 3, border: 'none', height: 10, fontSize: 22, height: '40px' }}
+            />
+        </StyledInputWrapper>
         {balanceItem('Price', formattedQuoteBidRate, true)}
-        <Button style={{ fontSize: 18, width: 112, height: 50, border: 'none', color: '#fff', background: 'linear-gradient(270deg, #E12D39 22.28%, #F86A6A 128.53%)' }} onClick={() => handleSubmitTrade(sellQty)}>Sell</Button>
+        <Button style={{ fontSize: 18, width: 112, height: 50, border: 'none', color: '#fff', background: 'linear-gradient(270deg, #E12D39 22.28%, #F86A6A 128.53%)' }} onClick={() => handleSubmitTrade(Number(sellQty) * -1)}>Sell</Button>
       </Cell>
     </BuySellWrapper>
   )
@@ -165,33 +212,6 @@ const marks = {
   10: '10x'
 }
 
-export const StyledInputWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 76px;
-  width: 475px;
-  border-radius: 16px;
-  .ant-input:focus .ant-input-focused {
-    border: none;
-    border-bottom: 1px solid white !important;
-    box-shadow: none;
-  }
-
-  .ant-input-focused .ant-input:focus {
-    border: none;
-    border-bottom: 1px solid white !important;
-    box-shadow: none;
-  }
-`
-
-export const SInput = styled(Input)`
-  .ant-input:focus {
-    border-color: #57a8e9;
-    outline: 0;
-    -webkit-box-shadow: 0 0 0 0 rgba(87,168,233, .2);
-    box-shadow: 0 0 0 0 rgba(87,168,233, .2);
-  }
-`
 
 const Header = ({ leverage, setLeverage, onSubmit, slippageInitValue }) => {
   const [slippageTolerance, setSlippageTolerance] = useState(slippageInitValue / 10)
@@ -237,6 +257,7 @@ const Header = ({ leverage, setLeverage, onSubmit, slippageInitValue }) => {
             <StyledInputWrapper style={{ backgroundColor: colors.lighterGrey }} >
               <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`slippage`}</Typography>
               <SInput
+                bordered={false}
                 value={slippageTolerance} 
                 onChange={({ target: { value }}) => {
                   setSlippageTolerance(value)
@@ -255,8 +276,6 @@ export const Ticket = () => {
   const [leverage, setLeverage] = useState(1)
   const [slippageTolerance, setSlippageTolerance] = useState(5) // 5 points == 0.5% or 0.005 fractional
   const userProvider = useProvider()
-  const { baseCurr, quoteCurr, expiry } = useFuture('ETH', 'DAI')
-  const title = `Future ${baseCurr}/${quoteCurr} - Exp. ${expiry}`
 
   const onSubmit = (slippage) => {
     setSlippageTolerance(Number(slippage) * 10)
@@ -265,7 +284,7 @@ export const Ticket = () => {
   return (
     <Wrapper style={{ backgroundColor: colors.backgroundSecondary }}>
       <Header slippageInitValue={slippageTolerance} onSubmit={onSubmit} slippageTolerance={slippageTolerance} setSlippageTolerance={setSlippageTolerance} leverage={leverage} setLeverage={setLeverage} />
-      <BuySell slippageTolerance={slippageTolerance} leverage={leverage} userProvider={userProvider} title={title} />
+      <BuySell slippageTolerance={slippageTolerance} leverage={leverage} userProvider={userProvider} />
     </Wrapper>
   )
 }

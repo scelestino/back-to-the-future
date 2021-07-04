@@ -1,4 +1,4 @@
-import { Button, Input, Modal as _Modal, Typography } from "antd";
+import { Modal as _Modal, Typography } from "antd";
 import { utils } from 'ethers';
 import React, { useState } from 'react';
 import styled from 'styled-components';
@@ -6,7 +6,7 @@ import { YellowButton } from "../../App";
 import { DAI_ADDRESS } from '../../constants';
 import { useAddress, useBalance, useContracts, useDaiContract, useGasPrice, useProvider, usePurchasingPower } from '../../services';
 import { Transactor } from "./../../helpers";
-import { colors, ModalContent, StyledInputWrapper, SInput } from "./Ticket";
+import { colors, ModalContent, SInput, StyledInputWrapper } from "./Ticket";
 const { parseUnits, formatUnits } = utils
 
 const Wrapper = styled.div`
@@ -51,7 +51,7 @@ const WITHDRAW = 'Withdraw'
 export const balanceItem = (text, number, alignStart, ccy) => (
   <div style={{ display: 'flex', flexDirection: 'column' }}>
     <Typography style={{ color: colors.menu.notSelected,  alignSelf: alignStart ? 'flex-start' : 'inherit' }}>{text}</Typography>
-    <Typography style={{ fontSize: 22, color: '#ffffff' }}>{`${Number(number).toFixed(4)} ${ccy ? ccy : ''}`}</Typography>
+    <Typography style={{ fontSize: alignStart ? 22 : 18, color: '#ffffff' }}>{`${Number(number).toFixed(4)} ${ccy ? ccy : ''}`}</Typography>
   </div>
 )
 
@@ -100,7 +100,7 @@ export const Wallet = () => {
   )
 
   const divider = (
-    <div style={{ margin: '0 10px', height: 45, width: '1px', backgroundColor: 'white' }} />
+    <div style={{ margin: '0 10px', height: 55, width: '1px', backgroundColor: 'white' }} />
   )
 
   return (

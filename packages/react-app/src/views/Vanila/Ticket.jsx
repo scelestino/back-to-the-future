@@ -1,9 +1,9 @@
 import { Button, Input, Slider, Typography } from "antd";
 import _Modal from "antd/lib/modal/Modal";
 import { utils } from 'ethers';
-import React, { useState } from 'react';
+import React, { useState, Suspense, SuspenseProps } from 'react';
 import styled from 'styled-components';
-import { useAskRate, useBidRate, useContracts, useGasPrice, useProvider } from '../../services';
+import { useAskRate, useBidRate, useContracts, useGasPrice, useProvider, useSpotPrice } from '../../services';
 import { Transactor } from "./../../helpers";
 import settingsIcon from './settingsIcon.svg';
 import { balanceItem } from './Wallet';
@@ -94,8 +94,8 @@ const BuySell = ({ userProvider, slippageTolerance, leverage }) => {
   const contracts = useContracts()
   const gasPrice = useGasPrice('localhost')
   const FutureContract = contracts.Future
-  const [rawQuoteBidRate, formattedQuoteBidRate] = useBidRate(buyRateQty, formatUnits)
-  const [rawQuoteAskRate, formattedQuoteAskRate] = useAskRate(sellRateQty, formatUnits)
+  const [rawQuoteBidRate, formattedQuoteBidRate] = useBidRate(sellRateQty, formatUnits)
+  const [rawQuoteAskRate, formattedQuoteAskRate] = useAskRate(buyRateQty, formatUnits)
 
   const handleSubmitTrade = async (qty) => {
     const tx = Transactor(userProvider, gasPrice)
@@ -136,7 +136,7 @@ const BuySell = ({ userProvider, slippageTolerance, leverage }) => {
             <SInput
               onBlur={() => {
                 if (sellQty && Number(sellQty) > 0) {
-                  setBuyRateQty(String(sellQty))
+                  setSellRateQty(String(sellQty))
                 }
               }}
               bordered={false}
@@ -216,15 +216,16 @@ const marks = {
 const Header = ({ leverage, setLeverage, onSubmit, slippageInitValue }) => {
   const [slippageTolerance, setSlippageTolerance] = useState(slippageInitValue / 10)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const spotPrice = useSpotPrice()
   const future = `ETH/DAI`
-  const expiry = '16/08/21'
+  const expiry = '09/07/21'
 
   return (
     <HeaderWrapper>
       <HeaderInnerWrapper>
         <div style={{ alignItems: 'flex-start', display: 'flex', flexDirection: 'column' }} >
-          <Typography style={{ color: 'white', fontSize: 24 }} >{`Future ${future}`}</Typography>
-          <Typography style={{ color: colors.menu.notSelected, fontSize: 18 }}>{`Exp ${expiry}`}</Typography>
+          <Typography style={{ color: 'white', fontSize: 24 }} >{`${future} - ${expiry}`}</Typography>
+          <Typography style={{ color: colors.menu.notSelected, fontSize: 18 }}>{`Spot Price: ${Number(formatUnits(spotPrice)).toFixed(4)}`}</Typography>
         </div>
         <IconWrapper onClick={() => setIsModalOpen(true)}>
           <img src={settingsIcon}></img>
@@ -250,12 +251,12 @@ const Header = ({ leverage, setLeverage, onSubmit, slippageInitValue }) => {
             <div>
             <Typography style={{ color: colors.menu.notSelected, fontSize: 16 }} >Slippage Tolerance</Typography>
             <Typography>
-              {`A 0.5% will apply automatically.`}<br></br>
+              {`A 0.5% will apply by default.`}<br></br>
               {`If you wish to change it type it below.`}
             </Typography>
             </div>
             <StyledInputWrapper style={{ backgroundColor: colors.lighterGrey }} >
-              <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`slippage`}</Typography>
+              <Typography style={{ marginLeft: 15, marginBottom: -10, display: 'flex', height: 36, flexDirection: 'column', justifyContent: 'flex-end', color: colors.menu.notSelected, fontSize: 14 }}>{`slippage (%)`}</Typography>
               <SInput
                 bordered={false}
                 value={slippageTolerance} 
@@ -273,7 +274,7 @@ const Header = ({ leverage, setLeverage, onSubmit, slippageInitValue }) => {
 
 // todo why is settings icon white?
 export const Ticket = () => {
-  const [leverage, setLeverage] = useState(1)
+  const [leverage, setLeverage] = useState(5)
   const [slippageTolerance, setSlippageTolerance] = useState(5) // 5 points == 0.5% or 0.005 fractional
   const userProvider = useProvider()
 
@@ -281,10 +282,19 @@ export const Ticket = () => {
     setSlippageTolerance(Number(slippage) * 10)
   }
 
+  const fallback = (
+    <BuySellWrapper>
+      <Cell>Fetching quotes...</Cell>
+      <Cell>Fetching quotes...</Cell>
+    </BuySellWrapper>
+  )
+
   return (
     <Wrapper style={{ backgroundColor: colors.backgroundSecondary }}>
       <Header slippageInitValue={slippageTolerance} onSubmit={onSubmit} slippageTolerance={slippageTolerance} setSlippageTolerance={setSlippageTolerance} leverage={leverage} setLeverage={setLeverage} />
-      <BuySell slippageTolerance={slippageTolerance} leverage={leverage} userProvider={userProvider} />
+      <Suspense fallback={fallback}>
+        <BuySell slippageTolerance={slippageTolerance} leverage={leverage} userProvider={userProvider} />
+      </Suspense>
     </Wrapper>
   )
 }

@@ -1,47 +1,9 @@
+import { formatUnits } from "@ethersproject/units";
+import { Typography } from "antd";
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
-import { Typography, Input, Modal, Button } from "antd";
-import { utils } from "ethers";
-import { useUserAddress } from "eth-hooks";
-import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from "../../hooks";
-import { NETWORKS, DAI_ABI, DAI_ADDRESS, WETH_ADDRESS, WETH_ABI} from "../../constants";
-import { Transactor } from "../../helpers";
-import { Row, Cell } from './Pools'
-import { YellowButton } from '../../App'
-import { ModalContent, StyledInputWrapper, colors, SInput } from './Ticket'
-
-const targetNetwork = NETWORKS.localhost;
-const { parseUnits, formatUnits } = utils;
-
-const Wrapper = styled.div`
-  height: 80px;
-  width: 100%;
-  display: flex;
-  background-color: rgb(48, 48, 48);
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  .ant-input {
-    height: 25px;
-  }
-`;
-
-const InnerWrapper = styled.div`
-  display: flex;
-  width: 80%;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  .ant-typography {
-    height: 25px;
-  }
-  .ant-input {
-    height: 25px;
-  }
-  .ant-btn {
-    margin-left: 12px;
-  }
-`;
+import { DAI_ABI, DAI_ADDRESS, WETH_ABI, WETH_ADDRESS } from "../../constants";
+import { useContractLoader, useContractReader, useExternalContractLoader } from "../../hooks";
+import { Cell, Row } from './Pools';
 
 export const balanceItem = (tokenName, text, number, alignStart) => (
   <div style={{ display: "flex", flexDirection: "column" }}>
@@ -71,24 +33,22 @@ const useMyContractReader = userProvider => {
 };
 
 export const Pool = ({ userProvider, tokenName, poolName }) => {
-  const address = useUserAddress(userProvider);
   const contracts = useMyContractReader(userProvider);
-  const gasPrice = useGasPrice(targetNetwork, "fast");
 
   const utilisationRate = useContractReader(contracts, poolName, "utilisationRate", [], formatUnits);
   const balance = useContractReader(contracts, poolName, "balance", [], formatUnits);
   const borrowed = useContractReader(contracts, poolName, "borrowed", [], formatUnits);
   const borrowingRate = useContractReader(contracts, poolName, "borrowingRate", [], formatUnits);
 
-  const divider = <div style={{ margin: "0 10px", height: 45, width: "1px", backgroundColor: "white" }} />;
+  console.log('bruno', utilisationRate)
 
   return (
     <Row>
       <Cell>{tokenName}</Cell>
-      <Cell>{Number(utilisationRate).toFixed(4)}</Cell>
+      <Cell>{`${(Number(utilisationRate) * 100).toFixed(2)}%`}</Cell>
       <Cell>{Number(balance).toFixed(4)}</Cell>
       <Cell>{Number(borrowed).toFixed(4)}</Cell>
-      <Cell>{Number(borrowingRate).toFixed(4)}</Cell>
+      <Cell>{`${(Number(borrowingRate) * 100).toFixed(2)}%`}</Cell>
     </Row>
   );
 };

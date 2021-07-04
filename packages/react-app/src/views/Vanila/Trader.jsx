@@ -18,7 +18,7 @@ export const Trader = () => {
         <Ticket />
       </div>
       <div style={{ height: '50%', backgroundColor: colors.backgroundSecondary, display: 'flex', width: '100vw', justifyContent: 'center' }}>
-        <Positions {...mockPos} />
+        <Positions />
       </div>
     </div>
   )

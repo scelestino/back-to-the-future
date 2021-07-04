@@ -1,6 +1,6 @@
 import { Contract } from "@ethersproject/contracts";
 import { JsonRpcSigner } from "@ethersproject/providers";
-import { bind } from "@react-rxjs/core";
+import { bind, shareLatest } from "@react-rxjs/core";
 import { BigNumber, utils } from "ethers";
 import { from, fromEvent, Observable, of, range } from "rxjs";
 import { filter, map, mergeMap, reduce, shareReplay, startWith, switchMap, tap, withLatestFrom } from "rxjs/operators";
@@ -84,7 +84,6 @@ type Formatter = (val: any) => any;
 
 export const [useBalance] = bind((address: string, formatter: Formatter = val => val) =>
   contractReader$("UserAccount", "wallets", address, DAI_ADDRESS).pipe(
-    tap(x => console.log("wallet response", x)),
     map(value => [value, formatter(value)] as const),
   ),
 );
@@ -107,6 +106,14 @@ export const [useAskRate] = bind((quantity: string, formatter: Formatter = val =
   ),
 );
 
+export const [useSpotPrice] = bind(
+  contractReader$("Future", "spot").pipe(
+    tap(x => {
+      console.log("spot price received: ", x);
+    }),
+  ),
+);
+
 interface Fill {
   future: string;
   closeCost: BigNumber;
@@ -116,7 +123,7 @@ interface Fill {
   leverage: number;
 }
 
-enum Side {
+export enum Side {
   Short = "Short",
   Long = "Long",
 }
@@ -124,7 +131,8 @@ enum Side {
 interface Position {
   side: Side;
   contract: string;
-  entryPrice: string;
+  openCost: BigNumber;
+  weightedAvgCost: string;
   size: string;
   margin: number;
 }
@@ -143,15 +151,14 @@ const isFill = (maybeFill: unknown): maybeFill is Fill => {
   return Object.keys(maybeFill as any).every(key => fillKeys.has(key as any));
 };
 
-const mapToPosition = ({ closeCost, closeQuantity, future, openCost, openQuantity, leverage }: Fill): Position => {
-  const contract = future; // .substr(10);
-  // const totalOpenQty = openQuantity.add(closeQuantity); // closeQty already negative?
-  // const totalOpenCost = openCost.sub(closeCost); // same question as above
-  // const weightedAvgCost = totalOpenCost.div(formatUnits(totalOpenQty));
+const mapToPosition = ({ future, openCost, openQuantity, leverage }: Fill): Position => {
+  const contract = future;
+  const weightedAvgOpenCost = openCost.mul(BigNumber.from(10).pow(18)).div(openQuantity).abs();
   return {
     side: openCost.isNegative() ? Side.Long : Side.Short,
     contract,
-    entryPrice: formatUnits(openCost),
+    openCost,
+    weightedAvgCost: Number(formatUnits(weightedAvgOpenCost)).toFixed(4).toString(),
     size: formatUnits(openQuantity),
     margin: leverage, // todo calculate margin
   };

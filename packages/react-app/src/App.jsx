@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Switch } from "react-router-dom";
 import { ThemeSwitch } from "./components";
 import { LiquidityProvider, Trader, Pools } from "./views";
+import { Account } from "./views/Vanila/Account";
 import { colors } from './views/Vanila/Ticket';
 import styled from 'styled-components'
 import logo from './views/Vanila/logo.svg'
@@ -16,10 +17,6 @@ export const YellowButton = styled(Button)`
 
 const Logo = () => (
     <img src={logo}></img>
-)
-
-const ConnectButton = () => (
-  <YellowButton>Connect Wallet</YellowButton>
 )
 
 function App() {
@@ -66,7 +63,7 @@ function App() {
                 </span>
               </Link>
             </div>
-            <ConnectButton />
+            <Account />
           </div>
         </div>
 

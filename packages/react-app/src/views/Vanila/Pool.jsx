@@ -6,6 +6,9 @@ import { useUserAddress } from "eth-hooks";
 import { useContractLoader, useContractReader, useExternalContractLoader, useGasPrice } from "../../hooks";
 import { NETWORKS, DAI_ABI, DAI_ADDRESS, WETH_ADDRESS, WETH_ABI} from "../../constants";
 import { Transactor } from "../../helpers";
+import { Row, Cell } from './Pools'
+import { YellowButton } from '../../App'
+import { ModalContent, StyledInputWrapper, colors, SInput } from './Ticket'
 
 const targetNetwork = NETWORKS.localhost;
 const { parseUnits, formatUnits } = utils;
@@ -80,20 +83,12 @@ export const Pool = ({ userProvider, tokenName, poolName }) => {
   const divider = <div style={{ margin: "0 10px", height: 45, width: "1px", backgroundColor: "white" }} />;
 
   return (
-    <Wrapper>
-      <InnerWrapper>
-        <Typography style={{ fontSize: 20 }}>{tokenName}</Typography>
-        <div style={{ display: "flex", flexDirection: "row" }}>
-          {ratioItem("Utilisation Rate", utilisationRate)}
-          {divider}
-          {balanceItem(tokenName, "Pool Size", balance)}
-          {divider}
-          {balanceItem(tokenName, "Borrowed", borrowed)}
-          {divider}
-          {ratioItem("Borrowing Rate", borrowingRate)}
-          {divider}
-        </div>
-      </InnerWrapper>
-    </Wrapper>
+    <Row>
+      <Cell>{tokenName}</Cell>
+      <Cell>{Number(utilisationRate).toFixed(4)}</Cell>
+      <Cell>{Number(balance).toFixed(4)}</Cell>
+      <Cell>{Number(borrowed).toFixed(4)}</Cell>
+      <Cell>{Number(borrowingRate).toFixed(4)}</Cell>
+    </Row>
   );
 };

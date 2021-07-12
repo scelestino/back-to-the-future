@@ -37,9 +37,11 @@ describe("Pools", async () => {
         expect(erc20.address).to.properAddress
 
         poolsFactory = (await ethers.getContractFactory('Pools', owner)) as Pools__factory
-        sut = await poolsFactory.deploy(0, 0, 0, 0)
+        sut = await poolsFactory.deploy()
         await sut.deployed()
         expect(sut.address).to.properAddress
+
+        await sut.enable(erc20.address, 0, 0, 0, 0)
 
         await erc20.setBalance(owner.address, parseUnits("1000000"))
         await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
@@ -291,10 +293,12 @@ describe("Pools", async () => {
             [parseUnits("100000"), parseUnits("90000"), parseUnits("0.9"), parseUnits("0.415"), parseUnits("0.8"), 0, parseUnits("0.04"), parseUnits("0.75")]
         ].forEach(([poolSize, borrowedAmount, utilisationRate, borrowingRate, optimalutilisationRate, baseBorrowRate, slope1, slope2]) => [
             it(`should return the borrowing rate for poolSize = ${formatUnits(poolSize.toString())}, borrowed amount = ${formatUnits(borrowedAmount.toString())}`, async () => {
-                sut = await poolsFactory.deploy(optimalutilisationRate, baseBorrowRate, slope1, slope2)
-                await sut.deployed()
-                expect(sut.address).to.properAddress
-                await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+                //sut = await poolsFactory.deploy(optimalutilisationRate, baseBorrowRate, slope1, slope2)
+                //await sut.deployed()
+                //expect(sut.address).to.properAddress
+                //await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+
+                await sut.enable(erc20.address, optimalutilisationRate, baseBorrowRate, slope1, slope2)
 
                 expect(await sut.borrowingRate(erc20.address)).to.be.eq(baseBorrowRate)
                 expect(await sut.utilisationRate(erc20.address)).to.be.eq(0)
@@ -308,10 +312,12 @@ describe("Pools", async () => {
         ]);
 
         it(`should quote a rate for a given quantity`, async () => {
-            sut = await poolsFactory.deploy(parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
-            await sut.deployed()
-            expect(sut.address).to.properAddress
-            await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+            // sut = await poolsFactory.deploy(parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
+            // await sut.deployed()
+            // expect(sut.address).to.properAddress
+            // await erc20.connect(owner).approve(sut.address, ethers.constants.MaxUint256)
+
+            await sut.enable(erc20.address, parseUnits("0.65"), 0, parseUnits("0.08"), parseUnits("1"))
 
             await sut.connect(owner).deposit(erc20.address, parseUnits("100"))
 

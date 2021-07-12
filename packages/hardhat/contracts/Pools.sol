@@ -14,31 +14,20 @@ contract Pools is IPools, Validated {
     using SafeERC20 for ERC20;
     using PRBMathUD60x18 for uint256;
 
-    // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
-    uint256 public immutable optimalUtilisationRate;
-    // This constant represents the excess utilization rate above the optimal.
-    // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
-    uint256 public immutable excessUtilisationRate;
-    // Base variable borrow rate when Utilization rate = 0.
-    uint256 internal immutable baseBorrowRate;
-    // Slope of the variable interest curve when utilization rate > 0 and <= optimalUtilisationRate.
-    uint256 internal immutable slope1;
-    // Slope of the variable interest curve when utilization rate > optimalUtilisationRate.
-    uint256 internal immutable slope2;
-
     mapping(address => Pool) private pools;
 
-    constructor (
-        uint256 _optimalUtilisationRate,
-        uint256 _baseBorrowRate,
-        uint256 _slope1,
-        uint256 _slope2
-    ) {
-        optimalUtilisationRate = _optimalUtilisationRate;
-        excessUtilisationRate = PRBMathUD60x18.SCALE - _optimalUtilisationRate;
-        baseBorrowRate = _baseBorrowRate;
-        slope1 = _slope1;
-        slope2 = _slope2;
+    function enable(address token, uint256 optimalUtilisationRate, uint256 baseBorrowRate, uint256 slope1, uint256 slope2) external {
+      Pool storage pool = pools[token];
+      pool.enabled = true;
+      pool.optimalUtilisationRate = optimalUtilisationRate;
+      pool.excessUtilisationRate = PRBMathUD60x18.SCALE - optimalUtilisationRate;
+      pool.baseBorrowRate = baseBorrowRate;
+      pool.slope1 = slope1;
+      pool.slope2 = slope2;
+    }
+
+    function disable(address token) external {
+      pools[token].enabled = false;
     }
 
     function balance(address token) external view returns (uint256) {
@@ -128,15 +117,15 @@ contract Pools is IPools, Validated {
     function _borrowingRateAfterLoan(address token, uint amount) internal view returns (uint rate) {
         Pool storage pool = pools[token];
         if (pool.balance == 0) {
-            rate = baseBorrowRate;
+            rate = pool.baseBorrowRate;
         } else {
             uint _utilisationRate = _utilisationRateAfterLoan(token, amount);
 
-            if (_utilisationRate > optimalUtilisationRate) {
-                uint256 excessUtilisationRateRatio = (_utilisationRate - optimalUtilisationRate).div(excessUtilisationRate);
-                rate = baseBorrowRate + slope1 + slope2.mul(excessUtilisationRateRatio);
+            if (_utilisationRate > pool.optimalUtilisationRate) {
+                uint256 excessUtilisationRateRatio = (_utilisationRate - pool.optimalUtilisationRate).div(pool.excessUtilisationRate);
+                rate = pool.baseBorrowRate + pool.slope1 + pool.slope2.mul(excessUtilisationRateRatio);
             } else {
-                rate = baseBorrowRate + _utilisationRate.mul(slope1).div(optimalUtilisationRate);
+                rate = pool.baseBorrowRate + _utilisationRate.mul(pool.slope1).div(pool.optimalUtilisationRate);
             }
         }
     }
@@ -152,10 +141,25 @@ contract Pools is IPools, Validated {
     }
 
     struct Pool {
+
+      bool enabled;
+      // This constant represents the utilization rate at which the pool aims to obtain most competitive borrow rates.
+      uint256 optimalUtilisationRate;
+      // This constant represents the excess utilization rate above the optimal.
+      // It's always equal to 1-optimal utilization rate. Added as a constant here for gas optimizations.
+      uint256 excessUtilisationRate;
+      // Base variable borrow rate when Utilization rate = 0.
+      uint256 baseBorrowRate;
+      // Slope of the variable interest curve when utilization rate > 0 and <= optimalUtilisationRate.
+      uint256 slope1;
+      // Slope of the variable interest curve when utilization rate > optimalUtilisationRate.
+      uint256 slope2;
+
       uint256 balance;
       uint256 borrowed;
       uint256 totalShare;
       mapping(address => uint256) shares;
+
     }
 
 }

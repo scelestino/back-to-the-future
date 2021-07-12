@@ -58,6 +58,8 @@ contract Pools is IPools, Validated {
 
     function deposit(address token, uint256 amount) external validUAmount(amount) returns (uint256 share) {
 
+        ERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
         Pool storage pool = pools[token];
 
         share = pool.totalShare > 0
@@ -67,8 +69,6 @@ contract Pools is IPools, Validated {
         pool.balance = pool.balance + amount;
         pool.totalShare = pool.totalShare + share;
         pool.shares[msg.sender] = pool.shares[msg.sender] + share;
-
-        ERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
     }
 
@@ -81,11 +81,11 @@ contract Pools is IPools, Validated {
 
         require(pool.shares[msg.sender] >= share, "Amount gt than balance");
 
+        ERC20(token).safeTransfer(msg.sender, amount);
+
         pool.balance = pool.balance - amount;
         pool.totalShare = pool.totalShare - share;
         pool.shares[msg.sender] = pool.shares[msg.sender] - share;
-
-        ERC20(token).safeTransfer(msg.sender, amount);
 
     }
 

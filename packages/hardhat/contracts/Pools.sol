@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "prb-math/contracts/PRBMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
@@ -11,7 +10,6 @@ import "./interfaces/IPools.sol";
 import "./interfaces/Validated.sol";
 
 contract Pools is IPools, Validated {
-    using SafeERC20 for ERC20;
     using PRBMathUD60x18 for uint256;
 
     mapping(address => Pool) private pools;

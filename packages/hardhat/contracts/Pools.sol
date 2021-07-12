@@ -56,7 +56,7 @@ contract Pools is IPools, Validated {
         : 0;
     }
 
-    function deposit(address token, uint256 amount) external validUAmount(amount) returns (uint256 share) {
+    function deposit(address token, uint256 amount) external validAddress(token) validUAmount(amount) returns (uint256 share) {
 
         ERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -72,7 +72,7 @@ contract Pools is IPools, Validated {
 
     }
 
-    function withdraw(address token, uint amount) external validUAmount(amount) {
+    function withdraw(address token, uint amount) external validAddress(token) validUAmount(amount) {
         Pool storage pool = pools[token];
 
         require(pool.balance >= amount, "Amount too big");
@@ -89,28 +89,28 @@ contract Pools is IPools, Validated {
 
     }
 
-    function borrow(address token, uint amount, address recipient) external override validUAmount(amount) validAddress(recipient) {
+    function borrow(address token, uint amount, address recipient) external override validAddress(token) validAddress(recipient) validUAmount(amount) {
         Pool storage pool = pools[token];
         pool.borrowed = pool.borrowed + amount;
         ERC20(token).safeTransfer(recipient, amount);
     }
 
-    function repay(address token, uint amount, uint interest) external override validUAmount(amount) validUAmount(interest) {
+    function repay(address token, uint amount, uint interest) external override validAddress(token) validUAmount(amount) validUAmount(interest) {
         Pool storage pool = pools[token];
         require(pool.borrowed >= amount, "Amount too big");
         pool.balance = pool.balance + interest;
         pool.borrowed = pool.borrowed - amount;
     }
 
-    function borrowingRate(address token) external view override returns (uint rate) {
+    function borrowingRate(address token) external view override validAddress(token) returns (uint rate) {
         rate = _borrowingRateAfterLoan(token, 0);
     }
 
-    function borrowingRateAfterLoan(address token, uint amount) validUAmount(amount) external view override returns (uint rate) {
+    function borrowingRateAfterLoan(address token, uint amount) validAddress(token) validUAmount(amount) external view override returns (uint rate) {
         rate = _borrowingRateAfterLoan(token, amount);
     }
 
-    function utilisationRate(address token) external view override returns (uint rate) {
+    function utilisationRate(address token) external view override validAddress(token) returns (uint rate) {
         rate = _utilisationRateAfterLoan(token, 0);
     }
 

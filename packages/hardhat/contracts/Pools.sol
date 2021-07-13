@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "prb-math/contracts/PRBMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
@@ -10,6 +11,7 @@ import "./interfaces/IPools.sol";
 import "./interfaces/Validated.sol";
 
 contract Pools is IPools, Validated {
+    using SafeERC20 for ERC20;
     using PRBMathUD60x18 for uint256;
 
     mapping(address => Pool) private pools;
@@ -65,8 +67,8 @@ contract Pools is IPools, Validated {
         : amount * (10 ** ERC20(token).decimals());
 
         pool.balance = pool.balance + amount;
-        pool.totalShare = pool.totalShare + share;
-        pool.shares[msg.sender] = pool.shares[msg.sender] + share;
+        pool.totalShare += share;
+        pool.shares[msg.sender] += share;
 
     }
 
@@ -81,23 +83,23 @@ contract Pools is IPools, Validated {
 
         ERC20(token).safeTransfer(msg.sender, amount);
 
-        pool.balance = pool.balance - amount;
-        pool.totalShare = pool.totalShare - share;
-        pool.shares[msg.sender] = pool.shares[msg.sender] - share;
+        pool.balance -= amount;
+        pool.totalShare -= share;
+        pool.shares[msg.sender] -= share;
 
     }
 
     function borrow(address token, uint amount, address recipient) external override validAddress(token) validAddress(recipient) validUAmount(amount) {
         Pool storage pool = pools[token];
-        pool.borrowed = pool.borrowed + amount;
+        pool.borrowed += amount;
         ERC20(token).safeTransfer(recipient, amount);
     }
 
     function repay(address token, uint amount, uint interest) external override validAddress(token) validUAmount(amount) validUAmount(interest) {
         Pool storage pool = pools[token];
         require(pool.borrowed >= amount, "Amount too big");
-        pool.balance = pool.balance + interest;
-        pool.borrowed = pool.borrowed - amount;
+        pool.balance += interest;
+        pool.borrowed -= amount;
     }
 
     function borrowingRate(address token) external view override validAddress(token) returns (uint rate) {
